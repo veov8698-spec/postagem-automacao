@@ -1,0 +1,2645 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SocialPublisher - Instagram, Facebook & YouTube</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="/css/style.css?v=9.1.0">
+  <style>
+    /* GARANTIA ABSOLUTA DE DESIGN STUDIO - CARDS LADO A LADO */
+    .accounts-header-block {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 2rem;
+      flex-wrap: wrap;
+      gap: 1.25rem;
+      background: rgba(18, 24, 38, 0.7);
+      backdrop-filter: blur(12px);
+      padding: 1.5rem 1.75rem;
+      border-radius: 16px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .accounts-header-info h2 {
+      font-size: 1.4rem;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      color: #fff;
+    }
+    .accounts-header-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+    }
+    .status-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.4rem 0.85rem;
+      border-radius: 9999px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      color: #94a3b8;
+    }
+    .status-chip.active {
+      border-color: rgba(16, 185, 129, 0.4);
+      color: #10b981;
+      background: rgba(16, 185, 129, 0.1);
+    }
+    .btn-demo-all {
+      background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+      color: white;
+      border: none;
+      padding: 0.55rem 1.15rem;
+      border-radius: 9999px;
+      font-family: inherit;
+      font-size: 0.82rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      box-shadow: 0 4px 15px rgba(59, 130, 246, 0.35);
+      transition: all 0.2s ease;
+    }
+    .btn-demo-all:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(59, 130, 246, 0.5);
+    }
+
+    /* GRID DE 3 CARDS LADO A LADO */
+    .accounts-cards-grid {
+      display: grid !important;
+      grid-template-columns: repeat(3, 1fr) !important;
+      gap: 1.5rem !important;
+      margin-bottom: 2.5rem !important;
+      width: 100% !important;
+    }
+    @media (max-width: 1100px) {
+      .accounts-cards-grid {
+        grid-template-columns: 1fr !important;
+      }
+    }
+
+    .account-hub-card {
+      background: rgba(18, 24, 38, 0.85) !important;
+      border: 1px solid rgba(255, 255, 255, 0.08) !important;
+      border-radius: 18px !important;
+      padding: 1.5rem !important;
+      display: flex !important;
+      flex-direction: column !important;
+      gap: 1.25rem !important;
+      position: relative !important;
+      overflow: hidden !important;
+      backdrop-filter: blur(12px) !important;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3) !important;
+    }
+    .account-hub-card:hover {
+      transform: translateY(-4px) !important;
+      border-color: rgba(59, 130, 246, 0.5) !important;
+      box-shadow: 0 12px 35px rgba(0, 0, 0, 0.45) !important;
+    }
+    .account-hub-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+    }
+    .account-hub-card.ig-card::before { background: linear-gradient(90deg, #f09433, #dc2743, #bc1888); }
+    .account-hub-card.fb-card::before { background: #1877f2; }
+    .account-hub-card.yt-card::before { background: #ff0000; }
+
+    /* Topo do Card */
+    .card-brand-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .brand-title-wrap {
+      display: flex;
+      align-items: center;
+      gap: 0.65rem;
+    }
+    .brand-icon-circle {
+      width: 34px;
+      height: 34px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.1rem;
+      color: white;
+    }
+    .brand-icon-circle.ig { background: linear-gradient(45deg, #f09433, #dc2743, #bc1888); }
+    .brand-icon-circle.fb { background: #1877f2; }
+    .brand-icon-circle.yt { background: #ff0000; }
+    .brand-title {
+      font-size: 1rem;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    /* Tag de Status */
+    .account-status-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.25rem 0.65rem;
+      border-radius: 9999px;
+      font-size: 0.72rem;
+      font-weight: 700;
+    }
+    .account-status-tag.connected {
+      background: rgba(16, 185, 129, 0.15);
+      border: 1px solid rgba(16, 185, 129, 0.4);
+      color: #34d399;
+    }
+    .account-status-tag.disconnected {
+      background: rgba(100, 116, 139, 0.15);
+      border: 1px solid rgba(100, 116, 139, 0.3);
+      color: #94a3b8;
+    }
+    .status-dot-sm {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: currentColor;
+    }
+
+    /* Perfil e AVATAR COM PROTEÇÃO TOTAL CONTRA EXPLOSÃO DE TAMANHO */
+    .card-profile-box {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      padding: 0.75rem;
+      background: rgba(0, 0, 0, 0.25);
+      border-radius: 14px;
+      border: 1px solid rgba(255, 255, 255, 0.04);
+    }
+    .avatar-ring, .row-avatar-ring {
+      width: 58px !important;
+      height: 58px !important;
+      min-width: 58px !important;
+      max-width: 58px !important;
+      min-height: 58px !important;
+      max-height: 58px !important;
+      border-radius: 50% !important;
+      padding: 2.5px !important;
+      box-sizing: border-box !important;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      background: #242c3d !important;
+      overflow: hidden !important;
+      flex-shrink: 0 !important;
+    }
+    .avatar-ring.ig-ring.connected { background: linear-gradient(45deg, #f09433, #dc2743, #bc1888) !important; }
+    .avatar-ring.fb-ring.connected { background: #1877f2 !important; }
+    .avatar-ring.yt-ring.connected { background: #ff0000 !important; }
+
+    .avatar-ring img, .avatar-ring .avatar-img, img.avatar-img, .row-avatar-ring img {
+      width: 100% !important;
+      height: 100% !important;
+      max-width: 54px !important;
+      max-height: 54px !important;
+      border-radius: 50% !important;
+      object-fit: cover !important;
+      display: block !important;
+    }
+    .avatar-placeholder {
+      width: 100%;
+      height: 100%;
+      background: #090c12;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.4rem;
+      color: #64748b;
+    }
+
+    .card-user-info {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 0.15rem;
+      overflow: hidden;
+    }
+    .card-account-name {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: #fff;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .card-account-id {
+      font-size: 0.75rem;
+      color: #64748b;
+      font-family: monospace;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .account-stats-badge {
+      display: inline-block;
+      margin-top: 0.25rem;
+      padding: 0.15rem 0.5rem;
+      border-radius: 9999px;
+      font-size: 0.7rem;
+      font-weight: 600;
+      background: rgba(59, 130, 246, 0.1);
+      border: 1px solid rgba(59, 130, 246, 0.25);
+      color: #60a5fa;
+      width: fit-content;
+    }
+
+    /* Feed de Miniaturas no Card */
+    .card-feed-section {
+      background: rgba(0, 0, 0, 0.2);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      border-radius: 12px;
+      padding: 0.75rem;
+    }
+    .feed-section-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: #94a3b8;
+      margin-bottom: 0.5rem;
+    }
+    .feed-sync-tag {
+      color: #10b981;
+      font-size: 0.7rem;
+      display: flex;
+      align-items: center;
+      gap: 0.25rem;
+    }
+    .card-recent-grid {
+      display: grid !important;
+      grid-template-columns: repeat(3, 1fr) !important;
+      gap: 0.45rem !important;
+    }
+    .feed-mini-post {
+      aspect-ratio: 1 / 1 !important;
+      border-radius: 8px !important;
+      overflow: hidden !important;
+      position: relative !important;
+      background: #090c12 !important;
+      border: 1px solid rgba(255, 255, 255, 0.06) !important;
+      cursor: pointer !important;
+    }
+    .feed-mini-post img {
+      width: 100% !important;
+      height: 100% !important;
+      object-fit: cover !important;
+      display: block !important;
+      transition: transform 0.25s ease !important;
+    }
+    .feed-mini-post:hover img {
+      transform: scale(1.12) !important;
+    }
+    .feed-mini-overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.65);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+    .feed-mini-post:hover .feed-mini-overlay {
+      opacity: 1;
+    }
+    .feed-mini-overlay span {
+      color: white;
+      font-size: 0.7rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 0.25rem;
+    }
+
+    /* Formatos Suportados */
+    .card-features-row {
+      display: flex;
+      gap: 0.4rem;
+      flex-wrap: wrap;
+    }
+    .feat-pill {
+      font-size: 0.72rem;
+      font-weight: 600;
+      color: #94a3b8;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.07);
+      padding: 0.2rem 0.55rem;
+      border-radius: 6px;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+    }
+
+    /* Ações do Card */
+    .card-actions-group {
+      margin-top: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+    .btn-card-action {
+      width: 100%;
+      padding: 0.65rem 1rem;
+      border-radius: 10px;
+      font-family: inherit;
+      font-size: 0.82rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      transition: all 0.2s ease;
+      text-decoration: none;
+      box-sizing: border-box;
+    }
+    .btn-card-action.primary {
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      color: #fff;
+    }
+    .btn-card-action.primary:hover {
+      background: rgba(59, 130, 246, 0.15);
+      border-color: #3b82f6;
+      color: #60a5fa;
+      transform: translateY(-2px);
+    }
+    .btn-card-action.link {
+      background: transparent;
+      border: 1px dashed rgba(255, 255, 255, 0.15);
+      color: #94a3b8;
+    }
+    .btn-card-action.link:hover {
+      border-color: #3b82f6;
+      color: #fff;
+    }
+    .card-sub-buttons {
+      display: flex;
+      gap: 0.4rem;
+    }
+    .btn-card-sub {
+      flex: 1;
+      padding: 0.45rem;
+      font-size: 0.75rem;
+      font-weight: 600;
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      color: #64748b;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.3rem;
+      transition: all 0.2s;
+    }
+    .btn-card-sub:hover {
+      background: rgba(255, 255, 255, 0.07);
+      color: #fff;
+    }
+    .btn-card-sub.danger:hover {
+      background: rgba(239, 68, 68, 0.15);
+      border-color: #ef4444;
+      color: #ef4444;
+    }
+
+    /* ================= GALERIA SALVA ULTRA-MODERNA (UI/UX STUDIO) ================= */
+    .gallery-wrapper {
+      padding: 0.5rem 0 2rem 0;
+    }
+    .gallery-header-block {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.5rem;
+      flex-wrap: wrap;
+      gap: 1.25rem;
+      background: rgba(18, 24, 38, 0.7);
+      backdrop-filter: blur(12px);
+      padding: 1.5rem 1.75rem;
+      border-radius: 16px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    }
+    .gallery-header-info h2 {
+      font-size: 1.4rem;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      color: #fff;
+      margin-bottom: 0.25rem;
+    }
+    .gallery-header-info h2 i {
+      color: #3b82f6;
+    }
+    .gallery-header-info .subtitle {
+      color: #94a3b8;
+      font-size: 0.9rem;
+    }
+    .btn-create-shortcut {
+      background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+      color: #fff;
+      border: none;
+      padding: 0.75rem 1.25rem;
+      border-radius: 12px;
+      font-weight: 600;
+      font-size: 0.88rem;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      cursor: pointer;
+      box-shadow: 0 4px 15px rgba(37, 99, 235, 0.35);
+      transition: all 0.2s ease;
+    }
+    .btn-create-shortcut:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(37, 99, 235, 0.5);
+    }
+
+    /* Painel de Controle: Busca e Filtros */
+    .gallery-control-panel {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem;
+      align-items: center;
+      justify-content: space-between;
+      background: rgba(15, 23, 42, 0.75);
+      backdrop-filter: blur(10px);
+      padding: 1rem 1.25rem;
+      border-radius: 14px;
+      border: 1px solid rgba(255, 255, 255, 0.07);
+      margin-bottom: 1.5rem;
+    }
+    .gallery-search-box {
+      flex: 1;
+      min-width: 250px;
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+    .gallery-search-box i.fa-magnifying-glass {
+      position: absolute;
+      left: 1rem;
+      color: #64748b;
+      font-size: 0.9rem;
+      pointer-events: none;
+    }
+    .gallery-search-box .search-input {
+      width: 100%;
+      background: rgba(0, 0, 0, 0.35);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 10px;
+      padding: 0.65rem 2.2rem 0.65rem 2.5rem;
+      color: #fff;
+      font-size: 0.88rem;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .gallery-search-box .search-input:focus {
+      border-color: #3b82f6;
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+    }
+    .gallery-search-box .search-input::placeholder {
+      color: #64748b;
+    }
+    .btn-clear-search {
+      position: absolute;
+      right: 0.75rem;
+      background: none;
+      border: none;
+      color: #94a3b8;
+      cursor: pointer;
+      font-size: 0.9rem;
+    }
+
+    /* Filtro de Redes em Abas */
+    .platform-tabs-filter {
+      display: flex;
+      gap: 0.4rem;
+      background: rgba(0, 0, 0, 0.3);
+      padding: 0.25rem;
+      border-radius: 10px;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+    .filter-tab {
+      background: transparent;
+      border: none;
+      color: #94a3b8;
+      padding: 0.5rem 0.85rem;
+      border-radius: 8px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.45rem;
+      transition: all 0.2s ease;
+    }
+    .filter-tab:hover {
+      color: #fff;
+      background: rgba(255, 255, 255, 0.05);
+    }
+    .filter-tab.active {
+      background: #3b82f6 !important;
+      color: #fff !important;
+      box-shadow: 0 2px 10px rgba(59, 130, 246, 0.35);
+    }
+    .filter-tab.ig-tab.active {
+      background: linear-gradient(45deg, #f09433, #dc2743, #bc1888) !important;
+      box-shadow: 0 2px 12px rgba(220, 39, 67, 0.4) !important;
+    }
+    .filter-tab.fb-tab.active {
+      background: #1877f2 !important;
+      box-shadow: 0 2px 12px rgba(24, 119, 242, 0.4) !important;
+    }
+    .filter-tab.yt-tab.active {
+      background: #ef4444 !important;
+      box-shadow: 0 2px 12px rgba(239, 68, 68, 0.4) !important;
+    }
+
+    /* Status e Botão Recarregar */
+    .status-filter-wrapper {
+      display: flex;
+      gap: 0.5rem;
+      align-items: center;
+    }
+    .status-select {
+      background: rgba(0, 0, 0, 0.35);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 10px;
+      color: #e2e8f0;
+      padding: 0.55rem 0.85rem;
+      font-size: 0.82rem;
+      outline: none;
+      cursor: pointer;
+    }
+    .status-select:focus {
+      border-color: #3b82f6;
+    }
+    .btn-refresh {
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      color: #94a3b8;
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-refresh:hover {
+      color: #3b82f6;
+      border-color: #3b82f6;
+      background: rgba(59, 130, 246, 0.1);
+      transform: rotate(45deg);
+    }
+
+    /* Cards de Estatísticas */
+    .stats-cards-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+    .stat-badge {
+      background: rgba(18, 24, 38, 0.7);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.07);
+      border-radius: 14px;
+      padding: 1rem 1.15rem;
+      display: flex;
+      align-items: center;
+      gap: 0.9rem;
+      transition: all 0.2s ease;
+    }
+    .stat-badge:hover {
+      transform: translateY(-2px);
+      border-color: rgba(255, 255, 255, 0.15);
+    }
+    .stat-icon-wrap {
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.2rem;
+      background: rgba(59, 130, 246, 0.15);
+      color: #3b82f6;
+    }
+    .stat-icon-wrap.ig { background: rgba(225, 48, 108, 0.15); color: #ff5483; }
+    .stat-icon-wrap.fb { background: rgba(24, 119, 242, 0.15); color: #589bff; }
+    .stat-icon-wrap.yt { background: rgba(239, 68, 68, 0.15); color: #ef4444; }
+    .stat-icon-wrap.sched { background: rgba(245, 158, 11, 0.15); color: #fbbf24; }
+    .stat-data {
+      display: flex;
+      flex-direction: column;
+    }
+    .stat-num {
+      font-size: 1.35rem;
+      font-weight: 800;
+      color: #fff;
+      line-height: 1.2;
+    }
+    .stat-name {
+      font-size: 0.76rem;
+      color: #94a3b8;
+      font-weight: 500;
+    }
+
+    /* GRID DA GALERIA & CARDS */
+    .gallery-grid {
+      display: grid !important;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)) !important;
+      gap: 1.5rem !important;
+      margin-top: 1rem !important;
+    }
+    .gallery-card {
+      background: linear-gradient(180deg, rgba(21, 27, 42, 0.85) 0%, rgba(15, 23, 42, 0.95) 100%) !important;
+      backdrop-filter: blur(14px) !important;
+      border: 1px solid rgba(255, 255, 255, 0.08) !important;
+      border-radius: 18px !important;
+      overflow: hidden !important;
+      display: flex !important;
+      flex-direction: column !important;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35) !important;
+      position: relative !important;
+    }
+    .gallery-card:hover {
+      transform: translateY(-6px) !important;
+      border-color: rgba(59, 130, 246, 0.5) !important;
+      box-shadow: 0 18px 40px rgba(0, 0, 0, 0.5), 0 0 25px rgba(59, 130, 246, 0.2) !important;
+    }
+    .gallery-media {
+      width: 100% !important;
+      height: 200px !important;
+      background: #080c14 !important;
+      position: relative !important;
+      overflow: hidden !important;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+    }
+    .gallery-media img, .gallery-media video {
+      width: 100% !important;
+      height: 100% !important;
+      object-fit: cover !important;
+      display: block !important;
+      transition: transform 0.35s ease !important;
+    }
+    .gallery-card:hover .gallery-media img {
+      transform: scale(1.05) !important;
+    }
+    .media-badge-type {
+      position: absolute !important;
+      top: 12px !important;
+      right: 12px !important;
+      left: auto !important;
+      background: rgba(15, 23, 42, 0.85) !important;
+      backdrop-filter: blur(8px) !important;
+      padding: 0.3rem 0.65rem !important;
+      border-radius: 30px !important;
+      font-size: 0.72rem !important;
+      font-weight: 700 !important;
+      color: #ffffff !important;
+      border: 1px solid rgba(255, 255, 255, 0.18) !important;
+      display: inline-flex !important;
+      align-items: center !important;
+      gap: 0.35rem !important;
+      z-index: 2 !important;
+    }
+
+    /* Corpo do Card */
+    .gallery-body {
+      padding: 1.25rem !important;
+      display: flex !important;
+      flex-direction: column !important;
+      flex: 1 !important;
+    }
+    .gallery-platforms {
+      display: flex !important;
+      gap: 0.4rem !important;
+      margin-bottom: 0.75rem !important;
+      flex-wrap: wrap !important;
+    }
+    .plat-badge {
+      font-size: 0.72rem !important;
+      font-weight: 700 !important;
+      padding: 0.25rem 0.55rem !important;
+      border-radius: 6px !important;
+      display: inline-flex !important;
+      align-items: center !important;
+      gap: 0.35rem !important;
+    }
+    .plat-badge.instagram {
+      background: rgba(225, 48, 108, 0.15) !important;
+      color: #ff5483 !important;
+      border: 1px solid rgba(225, 48, 108, 0.3) !important;
+    }
+    .plat-badge.facebook {
+      background: rgba(24, 119, 242, 0.15) !important;
+      color: #589bff !important;
+      border: 1px solid rgba(24, 119, 242, 0.3) !important;
+    }
+    .plat-badge.youtube {
+      background: rgba(255, 0, 0, 0.15) !important;
+      color: #ff4d4d !important;
+      border: 1px solid rgba(255, 0, 0, 0.3) !important;
+    }
+    .gallery-title {
+      font-size: 0.98rem !important;
+      font-weight: 700 !important;
+      margin-bottom: 0.4rem !important;
+      color: #f8fafc !important;
+      line-height: 1.35 !important;
+    }
+    .gallery-caption {
+      font-size: 0.85rem !important;
+      color: #94a3b8 !important;
+      line-height: 1.5 !important;
+      margin-bottom: 1rem !important;
+      display: -webkit-box !important;
+      -webkit-line-clamp: 3 !important;
+      -webkit-box-orient: vertical !important;
+      overflow: hidden !important;
+      word-break: break-word !important;
+    }
+    .gallery-footer {
+      display: flex !important;
+      align-items: center !important;
+      justify-content: space-between !important;
+      padding-top: 0.85rem !important;
+      border-top: 1px solid rgba(255, 255, 255, 0.06) !important;
+      margin-top: auto !important;
+    }
+    .post-status-badge {
+      font-size: 0.72rem !important;
+      font-weight: 700 !important;
+      padding: 0.2rem 0.55rem !important;
+      border-radius: 9999px !important;
+      display: inline-flex !important;
+      align-items: center !important;
+      gap: 0.3rem !important;
+    }
+    .post-status-badge.published {
+      background: rgba(16, 185, 129, 0.15) !important;
+      color: #34d399 !important;
+      border: 1px solid rgba(16, 185, 129, 0.25) !important;
+    }
+    .post-status-badge.scheduled {
+      background: rgba(245, 158, 11, 0.15) !important;
+      color: #fbbf24 !important;
+      border: 1px solid rgba(245, 158, 11, 0.25) !important;
+    }
+    .post-status-badge.failed {
+      background: rgba(239, 68, 68, 0.15) !important;
+      color: #f87171 !important;
+      border: 1px solid rgba(239, 68, 68, 0.25) !important;
+    }
+    .post-time {
+      font-size: 0.72rem !important;
+      color: #64748b !important;
+    }
+
+    /* Ações do Card */
+    .gallery-actions {
+      display: grid !important;
+      grid-template-columns: repeat(auto-fit, minmax(70px, 1fr)) !important;
+      gap: 0.4rem !important;
+      margin-top: 0.85rem !important;
+    }
+    .btn-action {
+      background: rgba(255, 255, 255, 0.05) !important;
+      border: 1px solid rgba(255, 255, 255, 0.08) !important;
+      color: #cbd5e1 !important;
+      padding: 0.45rem 0.6rem !important;
+      border-radius: 8px !important;
+      font-size: 0.78rem !important;
+      font-weight: 600 !important;
+      display: inline-flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      gap: 0.35rem !important;
+      cursor: pointer !important;
+      transition: all 0.2s ease !important;
+    }
+    .btn-action:hover {
+      background: rgba(59, 130, 246, 0.18) !important;
+      color: #60a5fa !important;
+      border-color: rgba(59, 130, 246, 0.35) !important;
+    }
+    .btn-action.btn-copy-fast:hover {
+      background: rgba(168, 85, 247, 0.18) !important;
+      color: #c084fc !important;
+      border-color: rgba(168, 85, 247, 0.35) !important;
+    }
+    .btn-action.btn-publish-now:hover {
+      background: rgba(16, 185, 129, 0.18) !important;
+      color: #34d399 !important;
+      border-color: rgba(16, 185, 129, 0.35) !important;
+    }
+    .btn-action.btn-delete:hover {
+      background: rgba(239, 68, 68, 0.18) !important;
+      color: #f87171 !important;
+      border-color: rgba(239, 68, 68, 0.35) !important;
+    }
+
+    /* Estado Vazio */
+    .empty-state {
+      grid-column: 1 / -1 !important;
+      text-align: center !important;
+      padding: 4rem 2rem !important;
+      background: rgba(18, 24, 38, 0.5) !important;
+      border-radius: 18px !important;
+      border: 1px dashed rgba(255, 255, 255, 0.12) !important;
+    }
+    .empty-state i {
+      font-size: 3rem !important;
+      color: #475569 !important;
+      margin-bottom: 1rem !important;
+    }
+    .empty-state h3 {
+      font-size: 1.2rem !important;
+      font-weight: 700 !important;
+      color: #e2e8f0 !important;
+      margin-bottom: 0.5rem !important;
+    }
+    .empty-state p {
+      color: #94a3b8 !important;
+      font-size: 0.88rem !important;
+      max-width: 400px !important;
+      margin: 0 auto !important;
+    }
+
+    /* =================================================== */
+    /* GARANTIA DE CLIQUE LIVRE NAS ABAS E ÍCONES         */
+    /* =================================================== */
+    .nav-tabs {
+      position: relative;
+      z-index: 50;
+    }
+    .nav-tab {
+      cursor: pointer !important;
+      position: relative;
+      z-index: 51;
+      user-select: none;
+    }
+    .nav-tab > * {
+      pointer-events: none;
+    }
+
+    /* =================================================== */
+    /* ESTILOS PROFISSIONAIS: GRUPOS, USUÁRIOS & ADMIN     */
+    /* =================================================== */
+    .user-auth-nav {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin-left: auto;
+    }
+    .user-pill-btn {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      background: rgba(30, 41, 59, 0.7);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      padding: 0.35rem 0.85rem;
+      border-radius: 9999px;
+      color: #e2e8f0;
+      font-size: 0.85rem;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .user-pill-btn:hover {
+      background: rgba(51, 65, 85, 0.8);
+      border-color: rgba(99, 102, 241, 0.4);
+    }
+    .user-avatar-sm {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #6366f1, #a855f7);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: white;
+    }
+    .role-badge-tag {
+      font-size: 0.65rem;
+      font-weight: 800;
+      padding: 0.15rem 0.45rem;
+      border-radius: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .role-badge-tag.root { background: rgba(245, 158, 11, 0.2); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.4); }
+    .role-badge-tag.admin { background: rgba(59, 130, 246, 0.2); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.4); }
+    .role-badge-tag.user { background: rgba(16, 185, 129, 0.2); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.4); }
+    .role-badge-tag.member { background: rgba(148, 163, 184, 0.2); color: #cbd5e1; border: 1px solid rgba(148, 163, 184, 0.4); }
+
+    /* Seletor de Grupos no Composer */
+    .group-selector-box {
+      background: rgba(15, 23, 42, 0.6);
+      border: 1px solid rgba(99, 102, 241, 0.25);
+      border-radius: 14px;
+      padding: 1rem 1.15rem;
+      margin-bottom: 1.25rem;
+    }
+    .group-selector-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 0.65rem;
+    }
+    .group-selector-header label {
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: #c7d2fe;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-bottom: 0;
+    }
+    .group-dropdown-wrap {
+      display: flex;
+      gap: 0.75rem;
+      align-items: center;
+    }
+    .group-select-input {
+      flex: 1;
+      background: rgba(30, 41, 59, 0.8);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 8px;
+      padding: 0.6rem 0.85rem;
+      color: #f1f5f9;
+      font-size: 0.9rem;
+      font-weight: 500;
+      outline: none;
+    }
+    .group-select-input:focus {
+      border-color: #6366f1;
+    }
+    .btn-manage-groups-link {
+      background: rgba(99, 102, 241, 0.15);
+      border: 1px solid rgba(99, 102, 241, 0.3);
+      color: #a5b4fc;
+      padding: 0.6rem 0.85rem;
+      border-radius: 8px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      transition: all 0.2s;
+    }
+    .btn-manage-groups-link:hover {
+      background: rgba(99, 102, 241, 0.3);
+      color: #fff;
+    }
+
+    /* Grid de Grupos */
+    .groups-view-container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 1.5rem 1rem;
+    }
+    .groups-header-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 1.75rem;
+    }
+    .groups-title-wrap h2 {
+      font-size: 1.45rem;
+      font-weight: 800;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 0.65rem;
+      margin-bottom: 0.25rem;
+    }
+    .groups-title-wrap p {
+      color: #94a3b8;
+      font-size: 0.9rem;
+    }
+    .btn-create-group {
+      background: linear-gradient(135deg, #6366f1, #4f46e5);
+      border: none;
+      color: white;
+      padding: 0.65rem 1.25rem;
+      border-radius: 10px;
+      font-weight: 700;
+      font-size: 0.9rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      cursor: pointer;
+      box-shadow: 0 4px 14px rgba(99, 102, 241, 0.35);
+      transition: all 0.2s;
+    }
+    .btn-create-group:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(99, 102, 241, 0.5);
+    }
+    .groups-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+      gap: 1.25rem;
+    }
+    .group-card {
+      background: rgba(18, 24, 38, 0.85);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 16px;
+      padding: 1.35rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      transition: all 0.25s ease;
+      position: relative;
+      overflow: hidden;
+    }
+    .group-card:hover {
+      border-color: rgba(99, 102, 241, 0.4);
+      transform: translateY(-3px);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+    }
+    .group-card-top {
+      display: flex;
+      align-items: center;
+      gap: 0.85rem;
+    }
+    .group-icon-circle {
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 1.25rem;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+    }
+    .group-info h3 {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: #f8fafc;
+      margin-bottom: 0.2rem;
+    }
+    .group-info p {
+      font-size: 0.82rem;
+      color: #94a3b8;
+    }
+    .group-platforms-badges {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.45rem;
+    }
+    .group-plat-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      padding: 0.25rem 0.6rem;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+    .group-plat-pill.instagram { background: rgba(225, 48, 108, 0.15); color: #f43f5e; border: 1px solid rgba(225, 48, 108, 0.3); }
+    .group-plat-pill.facebook { background: rgba(24, 119, 242, 0.15); color: #60a5fa; border: 1px solid rgba(24, 119, 242, 0.3); }
+    .group-plat-pill.youtube { background: rgba(255, 0, 0, 0.15); color: #f87171; border: 1px solid rgba(255, 0, 0, 0.3); }
+
+    .group-card-actions {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding-top: 0.85rem;
+      border-top: 1px solid rgba(255, 255, 255, 0.06);
+      margin-top: auto;
+    }
+    .btn-group-use {
+      background: rgba(99, 102, 241, 0.15);
+      border: 1px solid rgba(99, 102, 241, 0.35);
+      color: #c7d2fe;
+      padding: 0.45rem 0.85rem;
+      border-radius: 8px;
+      font-size: 0.82rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-group-use:hover {
+      background: #6366f1;
+      color: white;
+    }
+    .group-action-icons {
+      display: flex;
+      gap: 0.4rem;
+    }
+    .btn-group-icon {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      color: #94a3b8;
+      width: 30px;
+      height: 30px;
+      border-radius: 8px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.8rem;
+      transition: all 0.2s;
+    }
+    .btn-group-icon:hover {
+      background: rgba(255, 255, 255, 0.12);
+      color: #fff;
+    }
+    .btn-group-icon.danger:hover {
+      background: rgba(239, 68, 68, 0.2);
+      color: #f87171;
+      border-color: rgba(239, 68, 68, 0.3);
+    }
+
+    /* Tabela do Painel Administrativo */
+    .admin-view-container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 1.5rem 1rem;
+    }
+    .admin-stats-overview {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 1rem;
+      margin-bottom: 1.75rem;
+    }
+    .admin-stat-card {
+      background: rgba(18, 24, 38, 0.8);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 14px;
+      padding: 1.25rem;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+    .admin-stat-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.4rem;
+    }
+    .admin-stat-info span {
+      display: block;
+      font-size: 0.78rem;
+      color: #94a3b8;
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+    .admin-stat-info strong {
+      font-size: 1.5rem;
+      color: #fff;
+      font-weight: 800;
+    }
+    .admin-users-table-card {
+      background: rgba(18, 24, 38, 0.85);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 16px;
+      padding: 1.5rem;
+    }
+    .admin-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 1rem;
+    }
+    .admin-table th {
+      text-align: left;
+      padding: 0.85rem 1rem;
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #94a3b8;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .admin-table td {
+      padding: 0.95rem 1rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      color: #e2e8f0;
+      font-size: 0.88rem;
+    }
+    .admin-table tr:hover td {
+      background: rgba(255, 255, 255, 0.02);
+    }
+  </style>
+</head>
+<body>
+  <div class="app-container">
+    <!-- Barra Superior -->
+    <header class="top-nav">
+      <div class="brand">
+        <div class="brand-icon">
+          <i class="fa-solid fa-share-nodes"></i>
+        </div>
+        <div class="brand-text">
+          <h1>SocialPublisher</h1>
+          <span class="sub">Hub Unificado de Publicação</span>
+        </div>
+      </div>
+
+      <!-- Abas de Navegação -->
+      <nav class="nav-tabs">
+        <button class="nav-tab active" data-view="composer-view" id="tabComposer">
+          <i class="fa-solid fa-feather"></i>
+          <span>Nova Postagem</span>
+        </button>
+        <button class="nav-tab" data-view="groups-view" id="tabGroups">
+          <i class="fa-solid fa-layer-group"></i>
+          <span>Grupos de Redes</span>
+          <span class="badge-count" id="totalGroupsBadge">0</span>
+        </button>
+        <button class="nav-tab" data-view="gallery-view" id="tabGallery">
+          <i class="fa-solid fa-images"></i>
+          <span>Galeria Salva</span>
+          <span class="badge-count" id="totalPostsBadge">0</span>
+        </button>
+        <button class="nav-tab" data-view="accounts-view" id="tabAccounts">
+          <i class="fa-solid fa-link"></i>
+          <span>Contas Conectadas</span>
+          <span class="badge-count accounts-badge" id="activeAccountsBadge">0/3</span>
+        </button>
+        <button class="nav-tab" data-view="admin-view" id="tabAdmin" style="display: none;">
+          <i class="fa-solid fa-user-shield"></i>
+          <span>Painel Admin</span>
+        </button>
+      </nav>
+
+      <!-- Área de Usuário & Status -->
+      <div class="user-auth-nav">
+        <!-- Indicador de Status do MySQL -->
+        <div class="system-status" id="dbStatusIndicator" title="Verificando banco de dados...">
+          <span class="status-dot online"></span>
+          <span class="status-text" id="dbStatusText">MySQL Conectado</span>
+        </div>
+
+        <!-- Botão/Perfil de Usuário -->
+        <button class="user-pill-btn" id="btnUserAuthProfile" onclick="window.handleUserAuthClick()">
+          <span class="user-avatar-sm" id="navUserAvatar">R</span>
+          <span id="navUserName">Entrar</span>
+          <span class="role-badge-tag root" id="navUserRoleTag" style="display: none;">ROOT</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Conteúdo Principal -->
+    <main class="main-content">
+      
+      <!-- ================= TELA 1: COMPOSER (NOVA POSTAGEM) ================= -->
+      <section id="composer-view" class="view active">
+        <div class="composer-grid">
+          
+          <!-- Formulário de Criação -->
+          <div class="card form-card">
+            <div class="card-header">
+              <div class="composer-header-title-row">
+                <h2><i class="fa-solid fa-pen-nib"></i> Criar & Publicar Conteúdo</h2>
+                <span class="composer-active-tag"><i class="fa-solid fa-bolt"></i> Estúdio Ativo</span>
+              </div>
+              <p class="subtitle">Publique simultaneamente no Instagram, Facebook e YouTube com layout adaptado</p>
+              
+              <!-- Barra de Contas Conectadas em Tempo Real -->
+              <div class="composer-connected-banner">
+                <span class="net-item"><span class="dot-online"></span> Instagram: <strong>@gamefyofc</strong></span>
+                <span class="net-item"><span class="dot-online"></span> Facebook: <strong>Gamefy Ofic</strong></span>
+                <span class="net-item"><span class="dot-online"></span> YouTube: <strong>GAMEFY_OFICIAL</strong></span>
+              </div>
+            </div>
+
+            <form id="postForm" class="post-form">
+              <!-- Seletor Rápido de Grupo de Publicação -->
+              <div class="group-selector-box">
+                <div class="group-selector-header">
+                  <label><i class="fa-solid fa-layer-group"></i> Publicar através de Grupo de Redes:</label>
+                  <button type="button" class="btn-manage-groups-link" onclick="window.switchView('groups-view')">
+                    <i class="fa-solid fa-gear"></i> Gerenciar Grupos
+                  </button>
+                </div>
+                <div class="group-dropdown-wrap">
+                  <select id="selectComposerGroup" class="group-select-input" onchange="window.handleGroupSelectionChange(this.value)">
+                    <option value="custom">⚡ Seleção Manual Personalizada</option>
+                  </select>
+                </div>
+              </div>
+
+              <!-- Escolha das Plataformas -->
+              <div class="form-group">
+                <div class="platform-header-row">
+                  <label class="section-label" style="margin-bottom: 0;">Plataformas de Destino</label>
+                  <button type="button" class="btn-select-all" id="btnToggleSelectAll">
+                    <i class="fa-solid fa-check-double"></i> <span id="lblSelectAllText">Selecionar Tudo</span>
+                  </button>
+                </div>
+                <div class="platform-selector">
+                  <label class="platform-pill ig active" data-platform="instagram">
+                    <input type="checkbox" name="platform" value="instagram" checked>
+                    <i class="fa-brands fa-instagram"></i>
+                    <span>Instagram</span>
+                  </label>
+                  <label class="platform-pill fb active" data-platform="facebook">
+                    <input type="checkbox" name="platform" value="facebook" checked>
+                    <i class="fa-brands fa-facebook-f"></i>
+                    <span>Facebook</span>
+                  </label>
+                  <label class="platform-pill yt active" data-platform="youtube">
+                    <input type="checkbox" name="platform" value="youtube" checked>
+                    <i class="fa-brands fa-youtube"></i>
+                    <span>YouTube</span>
+                  </label>
+                </div>
+
+                <!-- Configuração de Formato do Instagram (Reels vs Feed vs Story) -->
+                <div class="ig-format-container" id="igFormatContainer">
+                  <div class="ig-format-header">
+                    <span class="ig-format-title"><i class="fa-brands fa-instagram"></i> Formato no Instagram:</span>
+                    <span class="ig-ratio-badge" id="igRatioBadge" style="display: none;">
+                      <i class="fa-solid fa-wand-magic-sparkles"></i> <span id="igRatioText">Auto-detectado: Reels</span>
+                    </span>
+                  </div>
+                  <div class="ig-format-selector">
+                    <button type="button" class="ig-format-btn active" data-format="auto" id="btnIgAuto">
+                      <i class="fa-solid fa-wand-magic-sparkles"></i>
+                      <span>Automático</span>
+                    </button>
+                    <button type="button" class="ig-format-btn" data-format="reels" id="btnIgReels">
+                      <i class="fa-solid fa-clapperboard"></i>
+                      <span>Reels (9:16)</span>
+                    </button>
+                    <button type="button" class="ig-format-btn" data-format="feed" id="btnIgFeed">
+                      <i class="fa-regular fa-square"></i>
+                      <span>Feed (Post Normal)</span>
+                    </button>
+                    <button type="button" class="ig-format-btn" data-format="story" id="btnIgStory">
+                      <i class="fa-solid fa-circle-notch"></i>
+                      <span>Story (24h)</span>
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Configuração de Formato do Facebook (Feed vs Reels vs Story) -->
+                <div class="fb-format-container" id="fbFormatContainer">
+                  <div class="fb-format-header">
+                    <span class="fb-format-title"><i class="fa-brands fa-facebook-f"></i> Formato no Facebook:</span>
+                    <span class="fb-ratio-badge" id="fbRatioBadge" style="display: none;">
+                      <i class="fa-solid fa-wand-magic-sparkles"></i> <span id="fbRatioText">Auto-detectado: Feed</span>
+                    </span>
+                  </div>
+                  <div class="fb-format-selector">
+                    <button type="button" class="fb-format-btn active" data-format="auto" id="btnFbAuto">
+                      <i class="fa-solid fa-wand-magic-sparkles"></i>
+                      <span>Automático</span>
+                    </button>
+                    <button type="button" class="fb-format-btn" data-format="feed" id="btnFbFeed">
+                      <i class="fa-regular fa-newspaper"></i>
+                      <span>Feed (Post / Foto)</span>
+                    </button>
+                    <button type="button" class="fb-format-btn" data-format="reels" id="btnFbReels">
+                      <i class="fa-solid fa-clapperboard"></i>
+                      <span>Facebook Reels (9:16)</span>
+                    </button>
+                    <button type="button" class="fb-format-btn" data-format="story" id="btnFbStory">
+                      <i class="fa-solid fa-circle-notch"></i>
+                      <span>Story (24h)</span>
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Configuração de Formato do YouTube (Shorts vs Vídeo Padrão) -->
+                <div class="yt-format-container" id="ytFormatContainer">
+                  <div class="yt-format-header">
+                    <span class="yt-format-title"><i class="fa-brands fa-youtube"></i> Formato no YouTube:</span>
+                    <span class="yt-ratio-badge" id="ytRatioBadge" style="display: none;">
+                      <i class="fa-solid fa-wand-magic-sparkles"></i> <span id="ytRatioText">Auto-detectado: Shorts (9:16)</span>
+                    </span>
+                  </div>
+                  <div class="yt-format-selector">
+                    <button type="button" class="yt-format-btn active" data-format="auto" id="btnYtAuto">
+                      <i class="fa-solid fa-wand-magic-sparkles"></i>
+                      <span>Automático (Detecta proporção)</span>
+                    </button>
+                    <button type="button" class="yt-format-btn" data-format="shorts" id="btnYtShorts">
+                      <i class="fa-solid fa-bolt"></i>
+                      <span>Shorts (9:16 Vertical)</span>
+                    </button>
+                    <button type="button" class="yt-format-btn" data-format="video" id="btnYtVideo">
+                      <i class="fa-solid fa-play"></i>
+                      <span>Vídeo Padrão (16:9)</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Upload de Mídia -->
+              <div class="form-group">
+                <label class="section-label">Mídia (Imagem ou Vídeo)</label>
+                <div class="dropzone" id="dropzone">
+                  <input type="file" id="mediaInput" accept="image/*,video/*" class="file-input">
+                  <div class="dropzone-content" id="dropzoneEmpty">
+                    <i class="fa-solid fa-cloud-arrow-up drop-icon"></i>
+                    <p class="drop-text"><strong>Clique para enviar</strong> ou arraste o arquivo aqui</p>
+                    <span class="drop-hint">Formatos suportados: JPG, PNG, WEBP, MP4, MOV (Até 100MB)</span>
+                  </div>
+                  <!-- Preview do Arquivo Selecionado -->
+                  <div class="media-selected-preview" id="mediaPreviewWrapper" style="display: none;">
+                    <div id="mediaPreviewContainer"></div>
+                    <button type="button" class="btn-remove-media" id="btnRemoveMedia" title="Remover mídia">
+                      <i class="fa-solid fa-trash"></i>
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Upload de Capa do Vídeo (Thumbnail Personalizada) -->
+              <div class="form-group thumbnail-upload-section" id="videoThumbnailGroup">
+                <div class="thumbnail-header-label">
+                  <label class="section-label">
+                    <i class="fa-regular fa-image"></i> Capa do Vídeo / Thumbnail <span class="optional">(Recomendado para YouTube / Vídeos)</span>
+                  </label>
+                </div>
+                <div class="thumbnail-dropzone" id="thumbnailDropzone">
+                  <input type="file" id="thumbnailInput" accept="image/png,image/jpeg,image/webp,image/jpg" class="file-input">
+                  <div class="thumbnail-dropzone-content" id="thumbnailDropzoneEmpty">
+                    <i class="fa-regular fa-image thumb-icon"></i>
+                    <div class="thumb-texts">
+                      <strong>Escolher Capa para o Vídeo</strong>
+                      <span>JPG, PNG ou WEBP (16:9 recomendado para YouTube)</span>
+                    </div>
+                    <button type="button" class="btn-browse-thumb">Carregar Capa</button>
+                  </div>
+                  <div class="thumbnail-selected-preview" id="thumbnailPreviewWrapper" style="display: none;">
+                    <img id="thumbnailImgPreview" src="" alt="Thumbnail Selecionada">
+                    <div class="thumbnail-preview-overlay">
+                      <span class="badge-cover"><i class="fa-solid fa-check"></i> Capa Ativa</span>
+                      <button type="button" class="btn-remove-thumb" id="btnRemoveThumbnail" title="Remover Capa">
+                        <i class="fa-solid fa-trash"></i>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Título (YouTube / Feed) -->
+              <div class="form-group">
+                <label for="postTitle" class="section-label">
+                  Título <span class="optional">(Recomendado para YouTube / Vídeos)</span>
+                </label>
+                <input type="text" id="postTitle" placeholder="Ex: Melhores dicas de programação..." class="input-field">
+              </div>
+
+              <!-- Legenda / Descrição -->
+              <div class="form-group">
+                <div class="label-with-counter">
+                  <label for="postCaption" class="section-label">Legenda / Descrição *</label>
+                  <span class="char-counter" id="charCounter">0 caracteres</span>
+                </div>
+                <textarea id="postCaption" rows="4" placeholder="Escreva a legenda para Instagram, Facebook e YouTube..." class="textarea-field" required></textarea>
+                <div class="quick-tags">
+                  <span class="tag-label">Tags rápidas:</span>
+                  <button type="button" class="tag-btn" data-tag="#reels">#reels</button>
+                  <button type="button" class="tag-btn" data-tag="#viral">#viral</button>
+                  <button type="button" class="tag-btn" data-tag="#novidade">#novidade</button>
+                  <button type="button" class="tag-btn" data-tag="#tecnologia">#tecnologia</button>
+                </div>
+              </div>
+
+              <!-- Tipo de Publicação: Imediata ou Agendada -->
+              <div class="form-group publish-mode-section">
+                <label class="section-label">Momento da Publicação</label>
+                <div class="mode-toggles">
+                  <button type="button" class="mode-btn active" id="modeDirect">
+                    <i class="fa-solid fa-bolt"></i>
+                    <span>Publicar Agora</span>
+                  </button>
+                  <button type="button" class="mode-btn" id="modeScheduled">
+                    <i class="fa-regular fa-calendar-check"></i>
+                    <span>Agendar Post</span>
+                  </button>
+                </div>
+
+                <!-- Campo de Data/Hora (visível apenas no modo agendado) -->
+                <div class="schedule-picker-box" id="scheduleBox" style="display: none;">
+                  <label for="scheduleDateTime">Data e Horário do Envio</label>
+                  <div class="datetime-input-wrapper">
+                    <i class="fa-regular fa-clock"></i>
+                    <input type="datetime-local" id="scheduleDateTime" class="input-field">
+                  </div>
+                  <small class="helper-text">O robô em Node.js irá disparar a postagem no horário exato.</small>
+                </div>
+              </div>
+
+              <!-- Botão Principal de Submissão -->
+              <button type="submit" class="btn-submit" id="btnSubmitPost">
+                <i class="fa-solid fa-paper-plane" id="submitBtnIcon"></i>
+                <span id="submitBtnText">Publicar Imediatamente</span>
+              </button>
+            </form>
+          </div>
+
+          <!-- Live Preview Interativo das Redes -->
+          <div class="card preview-card">
+            <div class="card-header preview-header">
+              <div class="preview-title">
+                <h2><i class="fa-regular fa-eye"></i> Prévia em Tempo Real</h2>
+                <p class="subtitle" id="previewSubtitle">Layout fiel adaptado às redes selecionadas</p>
+              </div>
+              <div class="preview-header-actions">
+                <button type="button" class="btn-preview-toggle-all" id="btnToggleAllPreviews" title="Expandir ou recolher todas as prévias">
+                  <i class="fa-solid fa-arrows-up-down"></i> <span id="lblToggleAllPreviews">Recolher Todos</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Container das Prévias Empilhadas com Acordeão -->
+            <div class="mockup-viewport-stacked" id="mockupsStackContainer">
+
+              <!-- Placeholder se nenhuma rede estiver marcada -->
+              <div class="no-platform-selected-placeholder" id="noPlatformSelectedPlaceholder" style="display: none;">
+                <i class="fa-regular fa-paper-plane"></i>
+                <h4>Nenhuma rede selecionada</h4>
+                <p>Selecione Instagram, Facebook ou YouTube acima para visualizar a prévia em tempo real.</p>
+              </div>
+
+              <!-- ================= 1. PREVIEW INSTAGRAM ================= -->
+              <div class="preview-accordion-item" id="previewItemInstagram">
+                <div class="preview-accordion-header" data-target="mockupBodyInstagram">
+                  <div class="preview-accordion-brand">
+                    <span class="brand-pill ig"><i class="fa-brands fa-instagram"></i> Instagram</span>
+                    <span class="brand-subtype" id="igPreviewSubtype">Feed / Reels</span>
+                  </div>
+                  <div class="accordion-actions">
+                    <span class="preview-state-text">Visível</span>
+                    <i class="fa-solid fa-chevron-up preview-collapse-arrow"></i>
+                  </div>
+                </div>
+                <div class="preview-accordion-body" id="mockupBodyInstagram">
+                  
+                  <!-- INSTAGRAM 1: Feed Normal Post (1:1) -->
+                  <div class="mockup-post instagram active" id="igFeedLayout">
+                    <div class="mockup-header">
+                      <div class="user-avatar ig-avatar" id="igMockupAvatar">GF</div>
+                      <div class="user-meta">
+                        <strong id="igMockupName">@gamefyofc</strong>
+                        <span>Áudio Original · Feed</span>
+                      </div>
+                      <i class="fa-solid fa-ellipsis post-more"></i>
+                    </div>
+                    <div class="mockup-media-container" id="mockupMediaIg">
+                      <div class="mockup-placeholder-media">
+                        <i class="fa-regular fa-image"></i>
+                        <span>Sua foto ou vídeo aqui</span>
+                      </div>
+                    </div>
+                    <div class="mockup-actions">
+                      <div class="left-actions">
+                        <i class="fa-regular fa-heart"></i>
+                        <i class="fa-regular fa-comment"></i>
+                        <i class="fa-regular fa-paper-plane"></i>
+                      </div>
+                      <i class="fa-regular fa-bookmark"></i>
+                    </div>
+                    <div class="mockup-body">
+                      <span class="likes-count">1.420 curtidas</span>
+                      <p class="mockup-caption">
+                        <strong class="user-handle" id="igMockupHandle">@gamefyofc</strong>
+                        <span id="mockupCaptionIg">Sua legenda aparecerá aqui em tempo real...</span>
+                      </p>
+                      <span class="mockup-time">HÁ ALGUNS SEGUNDOS</span>
+                    </div>
+                  </div>
+
+                  <!-- INSTAGRAM 2: Reels 9:16 Vertical -->
+                  <div class="mockup-post instagram-reels" id="igReelsLayout" style="display: none;">
+                    <div class="reels-phone-frame">
+                      <div class="reels-top-bar">
+                        <span class="reels-title"><i class="fa-solid fa-clapperboard"></i> Reels</span>
+                        <i class="fa-solid fa-camera"></i>
+                      </div>
+                      <div class="reels-media-container" id="mockupMediaIgReels">
+                        <div class="mockup-placeholder-media">
+                          <i class="fa-solid fa-clapperboard"></i>
+                          <span>Instagram Reels (9:16 Vertical)</span>
+                        </div>
+                      </div>
+                      <!-- Botões Laterais Flutuantes do Reels -->
+                      <div class="reels-floating-sidebar">
+                        <div class="reels-action-item">
+                          <i class="fa-regular fa-heart"></i>
+                          <span>24.8K</span>
+                        </div>
+                        <div class="reels-action-item">
+                          <i class="fa-regular fa-comment"></i>
+                          <span>512</span>
+                        </div>
+                        <div class="reels-action-item">
+                          <i class="fa-regular fa-paper-plane"></i>
+                          <span>1.2K</span>
+                        </div>
+                        <div class="reels-action-item">
+                          <i class="fa-solid fa-ellipsis"></i>
+                        </div>
+                        <div class="reels-audio-disc">
+                          <div class="audio-disc-thumb"></div>
+                        </div>
+                      </div>
+                      <!-- Overlay na Base do Reels -->
+                      <div class="reels-bottom-overlay">
+                        <div class="reels-user-row">
+                          <div class="user-avatar ig-avatar reels-mini-avatar" id="igReelsAvatar">GF</div>
+                          <strong id="igReelsHandle">@gamefyofc</strong>
+                          <button type="button" class="reels-follow-btn">Seguir</button>
+                        </div>
+                        <div class="reels-caption-box">
+                          <p id="mockupCaptionIgReels">Legenda do seu Reels com hashtags #reels #viral...</p>
+                        </div>
+                        <div class="reels-audio-row">
+                          <i class="fa-solid fa-music"></i>
+                          <span id="igReelsAudioTrack">Áudio original - gamefyofc</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                </div>
+              </div>
+
+              <!-- ================= 2. PREVIEW FACEBOOK ================= -->
+              <div class="preview-accordion-item" id="previewItemFacebook">
+                <div class="preview-accordion-header" data-target="mockupBodyFacebook">
+                  <div class="preview-accordion-brand">
+                    <span class="brand-pill fb"><i class="fa-brands fa-facebook-f"></i> Facebook</span>
+                    <span class="brand-subtype">Feed Público</span>
+                  </div>
+                  <div class="accordion-actions">
+                    <span class="preview-state-text">Visível</span>
+                    <i class="fa-solid fa-chevron-up preview-collapse-arrow"></i>
+                  </div>
+                </div>
+                <div class="preview-accordion-body" id="mockupBodyFacebook">
+                  <div class="mockup-post facebook active" id="mockupFacebook">
+                    <div class="mockup-header">
+                      <div class="user-avatar fb-avatar" id="fbMockupAvatar">GF</div>
+                      <div class="user-meta">
+                        <strong id="fbMockupName">Gamefy Ofic</strong>
+                        <span>Agora · <i class="fa-solid fa-earth-americas"></i></span>
+                      </div>
+                      <i class="fa-solid fa-ellipsis post-more"></i>
+                    </div>
+                    <div class="mockup-fb-text" id="mockupCaptionFb">
+                      Sua legenda aparecerá aqui em tempo real...
+                    </div>
+                    <div class="mockup-media-container" id="mockupMediaFb">
+                      <div class="mockup-placeholder-media">
+                        <i class="fa-regular fa-image"></i>
+                        <span>Sua foto ou vídeo aqui</span>
+                      </div>
+                    </div>
+                    <div class="mockup-actions fb-actions">
+                      <span><i class="fa-regular fa-thumbs-up"></i> Curtir</span>
+                      <span><i class="fa-regular fa-comment"></i> Comentar</span>
+                      <span><i class="fa-solid fa-share"></i> Compartilhar</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- ================= 3. PREVIEW YOUTUBE (16:9 OU SHORTS 9:16) ================= -->
+              <div class="preview-accordion-item" id="previewItemYouTube">
+                <div class="preview-accordion-header" data-target="mockupBodyYouTube">
+                  <div class="preview-accordion-brand">
+                    <span class="brand-pill yt"><i class="fa-brands fa-youtube"></i> YouTube</span>
+                    <span class="brand-subtype" id="ytPreviewSubtype">Vídeo Padrão (16:9)</span>
+                  </div>
+                  <div class="accordion-actions">
+                    <span class="preview-state-text">Visível</span>
+                    <i class="fa-solid fa-chevron-up preview-collapse-arrow"></i>
+                  </div>
+                </div>
+                <div class="preview-accordion-body" id="mockupBodyYouTube">
+                  
+                  <!-- YOUTUBE MOCKUP 1: Vídeo Padrão 16:9 -->
+                  <div class="mockup-post youtube youtube-standard active" id="ytStandardLayout">
+                    <div class="mockup-media-container yt-video" id="mockupMediaYt">
+                      <div class="mockup-placeholder-media">
+                        <i class="fa-solid fa-play"></i>
+                        <span>Vídeo / Thumbnail do YouTube (16:9)</span>
+                      </div>
+                    </div>
+                    <!-- Player Bar do YouTube -->
+                    <div class="yt-player-controls-bar">
+                      <div class="yt-scrubber">
+                        <div class="yt-scrubber-progress" style="width: 28%;"></div>
+                        <div class="yt-scrubber-scrub"></div>
+                      </div>
+                      <div class="yt-player-buttons">
+                        <div class="yt-pb-left">
+                          <i class="fa-solid fa-play"></i>
+                          <i class="fa-solid fa-forward-step"></i>
+                          <i class="fa-solid fa-volume-high"></i>
+                          <span class="yt-time-display">0:15 / 4:20</span>
+                        </div>
+                        <div class="yt-pb-right">
+                          <span class="yt-badge-quality">HD</span>
+                          <i class="fa-solid fa-gear"></i>
+                          <i class="fa-solid fa-expand"></i>
+                        </div>
+                      </div>
+                    </div>
+                    <!-- Informações do Vídeo -->
+                    <div class="yt-info">
+                      <div class="user-avatar yt-avatar" id="ytMockupAvatar">GF</div>
+                      <div class="yt-details">
+                        <h3 id="mockupTitleYt">Título do seu vídeo no YouTube</h3>
+                        <div class="yt-channel-row">
+                          <strong id="ytMockupChannelName">GAMEFY_OFICIAL</strong>
+                          <i class="fa-solid fa-circle-check yt-verified" title="Canal Verificado"></i>
+                          <button type="button" class="yt-subscribe-btn">Inscrever-se</button>
+                        </div>
+                        <div class="yt-action-buttons-row">
+                          <span class="yt-pill-btn"><i class="fa-regular fa-thumbs-up"></i> Gostei</span>
+                          <span class="yt-pill-btn"><i class="fa-regular fa-thumbs-down"></i></span>
+                          <span class="yt-pill-btn"><i class="fa-solid fa-share"></i> Compartilhar</span>
+                          <span class="yt-pill-btn"><i class="fa-solid fa-arrow-down"></i> Download</span>
+                        </div>
+                        <p class="yt-meta">1.8 mil visualizações · Transmissão recente</p>
+                        <p class="yt-desc" id="mockupCaptionYt">Descrição do vídeo...</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- YOUTUBE MOCKUP 2: Shorts 9:16 Vertical -->
+                  <div class="mockup-post youtube-shorts" id="ytShortsLayout" style="display: none;">
+                    <div class="shorts-phone-frame">
+                      <!-- Vídeo em 9:16 -->
+                      <div class="shorts-media-container" id="mockupMediaYtShorts">
+                        <div class="mockup-placeholder-media">
+                          <i class="fa-solid fa-bolt"></i>
+                          <span>YouTube Shorts (9:16 Vertical)</span>
+                        </div>
+                      </div>
+                      <!-- Botões Laterais Flutuantes do Shorts -->
+                      <div class="shorts-floating-sidebar">
+                        <div class="shorts-action-item">
+                          <div class="shorts-icon-btn"><i class="fa-solid fa-thumbs-up"></i></div>
+                          <span>42K</span>
+                        </div>
+                        <div class="shorts-action-item">
+                          <div class="shorts-icon-btn"><i class="fa-solid fa-thumbs-down"></i></div>
+                          <span>Desgostar</span>
+                        </div>
+                        <div class="shorts-action-item">
+                          <div class="shorts-icon-btn"><i class="fa-solid fa-comment-dots"></i></div>
+                          <span>1.1K</span>
+                        </div>
+                        <div class="shorts-action-item">
+                          <div class="shorts-icon-btn"><i class="fa-solid fa-share"></i></div>
+                          <span>Compartilhar</span>
+                        </div>
+                        <div class="shorts-action-item">
+                          <div class="shorts-icon-btn"><i class="fa-solid fa-repeat"></i></div>
+                          <span>Remix</span>
+                        </div>
+                        <div class="shorts-disc-spin">
+                          <i class="fa-solid fa-compact-disc"></i>
+                        </div>
+                      </div>
+                      <!-- Overlay na Base do Shorts -->
+                      <div class="shorts-bottom-overlay">
+                        <div class="shorts-channel-info">
+                          <div class="user-avatar yt-avatar shorts-mini-avatar" id="ytShortsAvatar">GF</div>
+                          <span class="shorts-channel-handle" id="ytShortsChannelName">@GAMEFY_OFICIAL</span>
+                          <button type="button" class="shorts-subscribe-btn">Inscrever-se</button>
+                        </div>
+                        <div class="shorts-caption-box">
+                          <p id="mockupCaptionYtShorts">Título ou descrição do seu Short aparecerá aqui com hashtags #Shorts...</p>
+                        </div>
+                        <div class="shorts-sound-track">
+                          <i class="fa-solid fa-music"></i>
+                          <span id="ytShortsAudioTrack">Som original - GAMEFY_OFICIAL</span>
+                        </div>
+                      </div>
+                      <!-- Linha vermelha do Shorts -->
+                      <div class="shorts-progress-line"></div>
+                    </div>
+                  </div>
+
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+
+      <!-- ================= TELA 2: GALERIA SALVA POR PLATAFORMA ================= -->
+      <section id="gallery-view" class="view">
+        <div class="gallery-wrapper">
+          
+          <!-- Header da Galeria -->
+          <div class="gallery-header-block">
+            <div class="gallery-header-info">
+              <h2><i class="fa-solid fa-photo-film"></i> Acervo & Galeria de Publicações</h2>
+              <p class="subtitle">Histórico unificado de posts, prévia de imagens/vídeos e status de publicação</p>
+            </div>
+            <div class="gallery-header-actions">
+              <button type="button" class="btn-create-shortcut" id="btnGoToComposer">
+                <i class="fa-solid fa-plus"></i> Criar Nova Postagem
+              </button>
+            </div>
+          </div>
+
+          <!-- Barra de Filtros e Busca Rápida -->
+          <div class="gallery-control-panel">
+            <!-- Campo de Busca em Tempo Real -->
+            <div class="gallery-search-box">
+              <i class="fa-solid fa-magnifying-glass"></i>
+              <input type="text" id="gallerySearchInput" placeholder="Buscar por legenda, título ou hashtag..." class="search-input">
+              <button type="button" class="btn-clear-search" id="btnClearSearch" style="display: none;"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+
+            <!-- Filtros de Plataforma -->
+            <div class="platform-tabs-filter" id="platformFilterTabs">
+              <button class="filter-tab active" data-filter-platform="all">
+                <i class="fa-solid fa-layer-group"></i> Todas as Redes
+              </button>
+              <button class="filter-tab ig-tab" data-filter-platform="instagram">
+                <i class="fa-brands fa-instagram"></i> Instagram
+              </button>
+              <button class="filter-tab fb-tab" data-filter-platform="facebook">
+                <i class="fa-brands fa-facebook-f"></i> Facebook
+              </button>
+              <button class="filter-tab yt-tab" data-filter-platform="youtube">
+                <i class="fa-brands fa-youtube"></i> YouTube
+              </button>
+            </div>
+
+            <!-- Filtro Status & Atualizar -->
+            <div class="status-filter-wrapper">
+              <select id="statusFilterSelect" class="status-select">
+                <option value="all">⚡ Todos os Status</option>
+                <option value="published">✅ Publicadas</option>
+                <option value="scheduled">⏰ Agendadas</option>
+                <option value="failed">❌ Com Erro</option>
+              </select>
+              <button class="btn-refresh" id="btnRefreshGallery" title="Recarregar Galeria">
+                <i class="fa-solid fa-rotate"></i>
+              </button>
+            </div>
+          </div>
+
+          <!-- Estatísticas Rápidas em Cards Glassmorphism -->
+          <div class="stats-cards-row">
+            <div class="stat-badge total-stat">
+              <div class="stat-icon-wrap"><i class="fa-solid fa-layer-group"></i></div>
+              <div class="stat-data">
+                <span class="stat-num" id="statTotal">0</span>
+                <span class="stat-name">Total de Posts</span>
+              </div>
+            </div>
+            <div class="stat-badge ig-stat">
+              <div class="stat-icon-wrap ig"><i class="fa-brands fa-instagram"></i></div>
+              <div class="stat-data">
+                <span class="stat-num" id="statIg">0</span>
+                <span class="stat-name">Instagram</span>
+              </div>
+            </div>
+            <div class="stat-badge fb-stat">
+              <div class="stat-icon-wrap fb"><i class="fa-brands fa-facebook-f"></i></div>
+              <div class="stat-data">
+                <span class="stat-num" id="statFb">0</span>
+                <span class="stat-name">Facebook</span>
+              </div>
+            </div>
+            <div class="stat-badge yt-stat">
+              <div class="stat-icon-wrap yt"><i class="fa-brands fa-youtube"></i></div>
+              <div class="stat-data">
+                <span class="stat-num" id="statYt">0</span>
+                <span class="stat-name">YouTube</span>
+              </div>
+            </div>
+            <div class="stat-badge sched-stat">
+              <div class="stat-icon-wrap sched"><i class="fa-solid fa-clock"></i></div>
+              <div class="stat-data">
+                <span class="stat-num" id="statSched">0</span>
+                <span class="stat-name">Agendadas</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Grid de Cards da Galeria -->
+          <div class="gallery-grid" id="galleryGrid">
+            <!-- Cards gerados dinamicamente via JS -->
+            <div class="empty-state">
+              <i class="fa-solid fa-inbox"></i>
+              <h3>Nenhuma postagem encontrada</h3>
+              <p>Crie sua primeira postagem direta ou agendada para preencher a galeria.</p>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- ================= TELA 3: CONTAS E APIS CONECTADAS ================= -->
+      <section id="accounts-view" class="view">
+        <div class="accounts-hub-wrapper">
+          
+          <!-- Banner Superior & Status do Hub -->
+          <div class="accounts-header-block">
+            <div class="accounts-header-info">
+              <h2><i class="fa-solid fa-circle-nodes"></i> Contas & Redes Conectadas</h2>
+              <p class="subtitle">Gerencie suas conexões oficiais do Instagram, Facebook e YouTube em tempo real</p>
+            </div>
+            <div class="accounts-header-actions">
+              <span class="status-chip active" id="chipMetaStatus"><i class="fa-solid fa-circle-check"></i> Meta API Conectada</span>
+              <span class="status-chip active" id="chipYtStatus"><i class="fa-solid fa-circle-check"></i> YouTube API Conectada</span>
+              <button class="btn-demo-all" id="btnConnectAllDemo" title="Ativa simulação com 1 clique para as 3 redes">
+                <i class="fa-solid fa-wand-magic-sparkles"></i> Conectar Modo Teste
+              </button>
+            </div>
+          </div>
+
+          <!-- GRID 3 COLUNAS - CARDS LADO A LADO -->
+          <div class="accounts-cards-grid">
+            
+            <!-- CARD 1: INSTAGRAM -->
+            <div class="account-hub-card ig-card" id="cardAccountIg">
+              <!-- Topo do Card -->
+              <div class="card-brand-header">
+                <div class="brand-title-wrap">
+                  <span class="brand-icon-circle ig"><i class="fa-brands fa-instagram"></i></span>
+                  <span class="brand-title">Instagram</span>
+                </div>
+                <div class="account-status-tag disconnected" id="igStatusTag">
+                  <span class="status-dot-sm"></span> Não conectado
+                </div>
+              </div>
+
+              <!-- Informações de Perfil -->
+              <div class="card-profile-box">
+                <div class="avatar-ring ig-ring" id="igAvatarWrapper">
+                  <div class="avatar-placeholder"><i class="fa-brands fa-instagram"></i></div>
+                </div>
+                <div class="card-user-info">
+                  <div class="card-account-name" id="igAccountName">Instagram Desconectado</div>
+                  <div class="card-account-id" id="igAccountId">ID: Não configurado</div>
+                  <span class="account-stats-badge" id="igStatsBadge" style="display: none;">Perfil Oficial</span>
+                </div>
+              </div>
+
+              <!-- Seção de Últimas Publicações (miniaturas lado a lado) -->
+              <div class="card-feed-section" id="igFeedWrapper" style="display: none;">
+                <div class="feed-section-header">
+                  <span><i class="fa-solid fa-grid-2"></i> Últimas Publicações</span>
+                  <span class="feed-sync-tag"><i class="fa-solid fa-circle-check"></i> Sincronizado</span>
+                </div>
+                <div class="card-recent-grid" id="igRecentFeedGrid"></div>
+              </div>
+
+              <!-- Recursos Suportados -->
+              <div class="card-features-row">
+                <span class="feat-pill"><i class="fa-solid fa-clapperboard"></i> Reels 9:16</span>
+                <span class="feat-pill"><i class="fa-regular fa-square"></i> Feed</span>
+                <span class="feat-pill"><i class="fa-solid fa-bolt"></i> HD 1080p</span>
+              </div>
+
+              <!-- Ações no Rodapé do Card -->
+              <div class="card-actions-group">
+                <button class="btn-card-action primary" onclick="window.openConnectModal('instagram')">
+                  <i class="fa-solid fa-key"></i> Configurar API Oficial
+                </button>
+                <a href="https://www.instagram.com/gamefyofc" target="_blank" rel="noopener noreferrer" class="btn-card-action link" id="igProfileLink" style="display: none;">
+                  <i class="fa-solid fa-arrow-up-right-from-square"></i> Ver no Instagram
+                </a>
+                <div class="card-sub-buttons">
+                  <button class="btn-card-sub" onclick="window.quickDemoConnect('instagram')" title="Modo Teste">
+                    <i class="fa-solid fa-vial"></i> Teste
+                  </button>
+                  <button class="btn-card-sub danger" onclick="window.disconnectSocialAccount('instagram')" title="Desconectar">
+                    <i class="fa-solid fa-power-off"></i> Sair
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- CARD 2: FACEBOOK -->
+            <div class="account-hub-card fb-card" id="cardAccountFb">
+              <!-- Topo do Card -->
+              <div class="card-brand-header">
+                <div class="brand-title-wrap">
+                  <span class="brand-icon-circle fb"><i class="fa-brands fa-facebook-f"></i></span>
+                  <span class="brand-title">Facebook</span>
+                </div>
+                <div class="account-status-tag disconnected" id="fbStatusTag">
+                  <span class="status-dot-sm"></span> Não conectado
+                </div>
+              </div>
+
+              <!-- Informações de Perfil -->
+              <div class="card-profile-box">
+                <div class="avatar-ring fb-ring" id="fbAvatarWrapper">
+                  <div class="avatar-placeholder"><i class="fa-brands fa-facebook-f"></i></div>
+                </div>
+                <div class="card-user-info">
+                  <div class="card-account-name" id="fbAccountName">Facebook Desconectado</div>
+                  <div class="card-account-id" id="fbAccountId">ID: Não configurado</div>
+                  <span class="account-stats-badge" id="fbStatsBadge" style="display: none;">Página Oficial</span>
+                </div>
+              </div>
+
+              <!-- Seção de Últimas Publicações (miniaturas lado a lado) -->
+              <div class="card-feed-section" id="fbFeedWrapper" style="display: none;">
+                <div class="feed-section-header">
+                  <span><i class="fa-solid fa-grid-2"></i> Últimas Publicações</span>
+                  <span class="feed-sync-tag"><i class="fa-solid fa-circle-check"></i> Sincronizado</span>
+                </div>
+                <div class="card-recent-grid" id="fbRecentFeedGrid"></div>
+              </div>
+
+              <!-- Recursos Suportados -->
+              <div class="card-features-row">
+                <span class="feat-pill"><i class="fa-solid fa-newspaper"></i> Feed</span>
+                <span class="feat-pill"><i class="fa-solid fa-video"></i> Vídeos</span>
+                <span class="feat-pill"><i class="fa-solid fa-shield-check"></i> Token 60d</span>
+              </div>
+
+              <!-- Ações no Rodapé do Card -->
+              <div class="card-actions-group">
+                <button class="btn-card-action primary" onclick="window.openConnectModal('facebook')">
+                  <i class="fa-solid fa-key"></i> Configurar API Oficial
+                </button>
+                <button type="button" class="btn-card-action" id="btnSwitchPageCard" onclick="window.openSwitchPageModal()" style="background: rgba(59, 130, 246, 0.15); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.35);">
+                  <i class="fa-solid fa-arrows-rotate"></i> Alternar Página
+                </button>
+                <a href="https://www.facebook.com/1097087796819080" target="_blank" rel="noopener noreferrer" class="btn-card-action link" id="fbProfileLink" style="display: none;">
+                  <i class="fa-solid fa-arrow-up-right-from-square"></i> Ver no Facebook
+                </a>
+                <div class="card-sub-buttons">
+                  <button class="btn-card-sub" onclick="window.quickDemoConnect('facebook')" title="Modo Teste">
+                    <i class="fa-solid fa-vial"></i> Teste
+                  </button>
+                  <button class="btn-card-sub danger" onclick="window.disconnectSocialAccount('facebook')" title="Desconectar">
+                    <i class="fa-solid fa-power-off"></i> Sair
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- CARD 3: YOUTUBE -->
+            <div class="account-hub-card yt-card" id="cardAccountYt">
+              <!-- Topo do Card -->
+              <div class="card-brand-header">
+                <div class="brand-title-wrap">
+                  <span class="brand-icon-circle yt"><i class="fa-brands fa-youtube"></i></span>
+                  <span class="brand-title">YouTube</span>
+                </div>
+                <div class="account-status-tag disconnected" id="ytStatusTag">
+                  <span class="status-dot-sm"></span> Não conectado
+                </div>
+              </div>
+
+              <!-- Informações de Perfil -->
+              <div class="card-profile-box">
+                <div class="avatar-ring yt-ring" id="ytAvatarWrapper">
+                  <div class="avatar-placeholder"><i class="fa-brands fa-youtube"></i></div>
+                </div>
+                <div class="card-user-info">
+                  <div class="card-account-name" id="ytAccountName">YouTube Desconectado</div>
+                  <div class="card-account-id" id="ytAccountId">ID: Não configurado</div>
+                  <span class="account-stats-badge" id="ytStatsBadge" style="display: none;">Canal Oficial</span>
+                </div>
+              </div>
+
+              <!-- Seção de Últimas Publicações (miniaturas lado a lado) -->
+              <div class="card-feed-section" id="ytFeedWrapper" style="display: none;">
+                <div class="feed-section-header">
+                  <span><i class="fa-solid fa-grid-2"></i> Últimos Vídeos</span>
+                  <span class="feed-sync-tag"><i class="fa-solid fa-circle-check"></i> Sincronizado</span>
+                </div>
+                <div class="card-recent-grid" id="ytRecentFeedGrid"></div>
+              </div>
+
+              <!-- Recursos Suportados -->
+              <div class="card-features-row">
+                <span class="feat-pill"><i class="fa-solid fa-bolt"></i> Shorts 9:16</span>
+                <span class="feat-pill"><i class="fa-solid fa-film"></i> Vídeos 16:9</span>
+                <span class="feat-pill"><i class="fa-solid fa-gamepad"></i> Games</span>
+              </div>
+
+              <!-- Ações no Rodapé do Card -->
+              <div class="card-actions-group">
+                <button class="btn-card-action primary" onclick="window.openConnectModal('youtube')">
+                  <i class="fa-solid fa-key"></i> Configurar API Oficial
+                </button>
+                <a href="https://www.youtube.com/@gamefyofc" target="_blank" rel="noopener noreferrer" class="btn-card-action link" id="ytProfileLink" style="display: none;">
+                  <i class="fa-solid fa-arrow-up-right-from-square"></i> Ver no YouTube
+                </a>
+                <div class="card-sub-buttons">
+                  <button class="btn-card-sub" onclick="window.quickDemoConnect('youtube')" title="Modo Teste">
+                    <i class="fa-solid fa-vial"></i> Teste
+                  </button>
+                  <button class="btn-card-sub danger" onclick="window.disconnectSocialAccount('youtube')" title="Desconectar">
+                    <i class="fa-solid fa-power-off"></i> Sair
+                  </button>
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Informações de Segurança e Banco -->
+          <div class="card security-box">
+            <i class="fa-solid fa-shield-halved"></i>
+            <div>
+              <strong>Segurança e Persistência no MySQL</strong>
+              <p>Os tokens de acesso são gravados diretamente na tabela <code>social_accounts</code> do seu banco MySQL local, permitindo que o robô publique sem pedir login novamente.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= TELA 4: GERENCIADOR DE GRUPOS DE REDES ================= -->
+      <section id="groups-view" class="view">
+        <div class="groups-view-container">
+          <div class="groups-header-row">
+            <div class="groups-title-wrap">
+              <h2><i class="fa-solid fa-layer-group" style="color: #6366f1;"></i> Seus Grupos de Redes Sociais</h2>
+              <p>Agrupe canais e perfis para publicar simultaneamente com um único clique</p>
+            </div>
+            <button class="btn-create-group" onclick="window.openGroupModal()">
+              <i class="fa-solid fa-plus"></i> Novo Grupo
+            </button>
+          </div>
+
+          <!-- Grid Dinâmico de Grupos -->
+          <div class="groups-grid" id="groupsCardsGrid">
+            <div style="text-align: center; padding: 3rem; color: #94a3b8; grid-column: 1 / -1;">
+              <i class="fa-solid fa-spinner fa-spin" style="font-size: 1.5rem; margin-bottom: 0.5rem;"></i>
+              <p>Carregando seus grupos...</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= TELA 5: PAINEL ADMINISTRATIVO & USUÁRIOS ================= -->
+      <section id="admin-view" class="view">
+        <div class="admin-view-container">
+          <div class="groups-header-row">
+            <div class="groups-title-wrap">
+              <h2><i class="fa-solid fa-shield-halved" style="color: #f59e0b;"></i> Painel de Administração & Usuários</h2>
+              <p>Controle de permissões (Root, Administrador, Usuário) e auditoria do sistema</p>
+            </div>
+            <button class="btn-create-group" style="background: linear-gradient(135deg, #f59e0b, #d97706);" onclick="window.openCreateUserModal()">
+              <i class="fa-solid fa-user-plus"></i> Novo Usuário
+            </button>
+          </div>
+
+          <!-- Métricas Operacionais -->
+          <div class="admin-stats-overview">
+            <div class="admin-stat-card">
+              <div class="admin-stat-icon" style="background: rgba(99, 102, 241, 0.15); color: #818cf8;">
+                <i class="fa-solid fa-users"></i>
+              </div>
+              <div class="admin-stat-info">
+                <span>Total de Usuários</span>
+                <strong id="adminCountUsers">1</strong>
+              </div>
+            </div>
+            <div class="admin-stat-card">
+              <div class="admin-stat-icon" style="background: rgba(16, 185, 129, 0.15); color: #34d399;">
+                <i class="fa-solid fa-layer-group"></i>
+              </div>
+              <div class="admin-stat-info">
+                <span>Grupos Criados</span>
+                <strong id="adminCountGroups">1</strong>
+              </div>
+            </div>
+            <div class="admin-stat-card">
+              <div class="admin-stat-icon" style="background: rgba(245, 158, 11, 0.15); color: #fbbf24;">
+                <i class="fa-solid fa-crown"></i>
+              </div>
+              <div class="admin-stat-info">
+                <span>Nível Atual</span>
+                <strong id="adminCurrentRole">ROOT</strong>
+              </div>
+            </div>
+          </div>
+
+          <!-- Tabela de Usuários -->
+          <div class="admin-users-table-card">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+              <h3 style="color: #fff; font-size: 1.1rem; font-weight: 700;">
+                <i class="fa-solid fa-user-gear"></i> Usuários Registrados
+              </h3>
+              <span style="color: #94a3b8; font-size: 0.82rem;">Gerencie perfis e acesso a recursos</span>
+            </div>
+            <table class="admin-table">
+              <thead>
+                <tr>
+                  <th>Usuário</th>
+                  <th>E-mail</th>
+                  <th>Permissão</th>
+                  <th>Status</th>
+                  <th>Criado Em</th>
+                  <th style="text-align: right;">Ações</th>
+                </tr>
+              </thead>
+              <tbody id="adminUsersTableBody">
+                <tr>
+                  <td colspan="6" style="text-align: center; color: #94a3b8; padding: 2rem;">Carregando usuários...</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- Modal Sincronizar Sessão Chrome -->
+    <div class="modal-overlay" id="chromeSyncModal" style="display: none;">
+      <div class="modal-card fast-login-card">
+        <div class="modal-header">
+          <h3><i class="fa-brands fa-chrome" style="color: #4285f4;"></i> Sincronizar Contas do Navegador</h3>
+          <button class="modal-close" id="btnChromeSyncClose">&times;</button>
+        </div>
+        <div class="modal-content">
+          <div class="fast-login-box">
+            <div class="chrome-accounts-list">
+              <div class="chrome-account-item">
+                <i class="fa-brands fa-google" style="color: #ea4335;"></i>
+                <div class="chrome-acc-text">
+                  <strong>Conta do Google / YouTube</strong>
+                  <span id="chromeGoogleDetect">Meu Canal Oficial (Ativo no Chrome)</span>
+                </div>
+                <i class="fa-solid fa-circle-check check-ok"></i>
+              </div>
+              <div class="chrome-account-item">
+                <i class="fa-brands fa-instagram" style="color: #e1306c;"></i>
+                <div class="chrome-acc-text">
+                  <strong>Sessão do Instagram</strong>
+                  <span id="chromeIgDetect">@meu_perfil_insta (Conectado)</span>
+                </div>
+                <i class="fa-solid fa-circle-check check-ok"></i>
+              </div>
+              <div class="chrome-account-item">
+                <i class="fa-brands fa-facebook" style="color: #1877f2;"></i>
+                <div class="chrome-acc-text">
+                  <strong>Página do Facebook</strong>
+                  <span id="chromeFbDetect">Página Comercial (Autorizada)</span>
+                </div>
+                <i class="fa-solid fa-circle-check check-ok"></i>
+              </div>
+            </div>
+            
+            <p class="chrome-hint">
+              As 3 contas serão vinculadas no SocialPublisher com fotos de perfil em alta definição e feed de publicações recentes.
+            </p>
+
+            <button type="button" class="btn-chrome-confirm" id="btnConfirmChromeSync">
+              <i class="fa-brands fa-chrome"></i> Autorizar e Sincronizar Todas Agora
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal de Login Rápido / Social -->
+    <div class="modal-overlay" id="fastLoginModal" style="display: none;">
+      <div class="modal-card fast-login-card">
+        <div class="modal-header">
+          <h3 id="fastLoginTitle">Entrar na Conta</h3>
+          <button class="modal-close" id="btnFastLoginClose">&times;</button>
+        </div>
+        <div class="modal-content">
+          <div class="fast-login-box">
+            <div class="fast-login-icon-badge" id="fastLoginIconBadge">
+              <i class="fa-brands fa-instagram"></i>
+            </div>
+            <h4 id="fastLoginSubhead">Conectar perfil rapidamente</h4>
+            <p class="fast-login-desc" id="fastLoginDesc">
+              Insira o @ ou nome do seu perfil para conectar instantaneamente sem precisar gerar tokens no painel de desenvolvedores.
+            </p>
+
+            <form id="fastLoginForm">
+              <input type="hidden" id="fastLoginPlatform">
+              
+              <div class="form-group">
+                <label for="fastLoginUsername" class="section-label" id="fastLoginUserLabel">Seu @ Perfil / Nome da Página</label>
+                <div class="input-with-icon">
+                  <i class="fa-solid fa-at" id="fastLoginInputIcon"></i>
+                  <input type="text" id="fastLoginUsername" class="input-field pad-left" placeholder="ex: @meu_instagram" required>
+                </div>
+              </div>
+
+              <div class="fast-login-actions">
+                <button type="submit" class="btn-fast-confirm" id="btnFastConfirm">
+                  <i class="fa-solid fa-bolt"></i> Autorizar e Conectar Agora
+                </button>
+                <button type="button" class="btn-oauth-browser" id="btnOAuthBrowser" style="display: none;">
+                  <i class="fa-solid fa-arrow-up-right-from-square"></i> Abrir Login Oficial no Navegador
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal de Configuração de API / Token -->
+    <div class="modal-overlay" id="connectModal" style="display: none;">
+      <div class="modal-card">
+        <div class="modal-header">
+          <h3 id="connectModalTitle">Conectar Conta</h3>
+          <button class="modal-close" id="btnConnectModalClose">&times;</button>
+        </div>
+        <div class="modal-content">
+          <div class="api-instructions-card" id="apiInstructionsBox">
+            <i class="fa-solid fa-circle-info"></i>
+            <div>
+              <strong>Como pegar o token real em 1 minuto:</strong>
+              <p id="apiInstructionsText">
+                Acesse o painel oficial da Meta ou do Google, gere o token de acesso da sua conta e cole aqui.
+              </p>
+              <a href="https://developers.facebook.com/tools/explorer/" target="_blank" class="api-guide-link" id="apiGuideLink">
+                <i class="fa-solid fa-arrow-up-right-from-square"></i> Abrir Meta Graph API Explorer
+              </a>
+            </div>
+          </div>
+
+          <form id="connectForm">
+            <input type="hidden" id="connectPlatform">
+            
+            <div class="form-group" id="groupAccountId">
+              <label for="inputAccountId" class="section-label" id="labelAccountId">ID da Conta / Página / Canal *</label>
+              <input type="text" id="inputAccountId" class="input-field" placeholder="Ex: 17841400000000000" required>
+              <small class="helper-text" id="helpAccountId">Obtido no painel de desenvolvedores ou URL.</small>
+            </div>
+
+            <div class="form-group" id="groupAccessToken">
+              <label for="inputAccessToken" class="section-label" id="labelAccessToken">Token de Acesso (Access Token) *</label>
+              <input type="password" id="inputAccessToken" class="input-field" placeholder="EAABwzL..." required>
+              <small class="helper-text" id="helpAccessToken">Token de longa duração com permissão para publicar.</small>
+            </div>
+
+            <div class="form-group" id="groupApiKey" style="display: none;">
+              <label for="inputApiKey" class="section-label">Google API Key (YouTube)</label>
+              <input type="text" id="inputApiKey" class="input-field" placeholder="AIzaSy...">
+            </div>
+
+            <div class="modal-actions-bar">
+              <button type="submit" class="btn-submit" id="btnSaveCredentials">
+                <i class="fa-solid fa-check"></i> Testar & Salvar no MySQL
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal de Detalhes da Postagem -->
+    <div class="modal-overlay" id="postModal" style="display: none;">
+      <div class="modal-card">
+        <div class="modal-header">
+          <h3 id="modalTitle">Detalhes da Postagem</h3>
+          <button class="modal-close" id="btnModalClose">&times;</button>
+        </div>
+        <div class="modal-content" id="modalContent">
+          <!-- Conteúdo gerado dinamicamente -->
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal Alternar Página do Facebook -->
+    <div class="modal-overlay" id="switchPageModal" style="display: none;">
+      <div class="modal-card" style="max-width: 520px;">
+        <div class="modal-header">
+          <h3><i class="fa-brands fa-facebook" style="color: #1877f2;"></i> Suas Páginas do Facebook</h3>
+          <button class="modal-close" id="btnSwitchPageClose" onclick="document.getElementById('switchPageModal').style.display='none'">&times;</button>
+        </div>
+        <div class="modal-content">
+          <p style="color: #94a3b8; font-size: 0.88rem; margin-bottom: 1.25rem;">
+            Selecione qual página você deseja usar no aplicativo para publicar suas postagens:
+          </p>
+          <div id="switchPagesList" style="display: flex; flex-direction: column; gap: 0.75rem;">
+            <div style="text-align: center; padding: 2rem; color: #94a3b8;">
+              <i class="fa-solid fa-spinner fa-spin"></i> Carregando páginas da Meta...
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal de Criação / Edição de Grupo -->
+    <div class="modal-overlay" id="groupModal" style="display: none;">
+      <div class="modal-card" style="max-width: 520px;">
+        <div class="modal-header">
+          <h3 id="groupModalTitle"><i class="fa-solid fa-layer-group" style="color: #6366f1;"></i> Novo Grupo de Redes</h3>
+          <button class="modal-close" id="btnGroupModalClose" onclick="window.closeGroupModal()">&times;</button>
+        </div>
+        <div class="modal-content">
+          <form id="groupForm" onsubmit="window.handleSaveGroup(event)">
+            <input type="hidden" id="groupFormId">
+            
+            <div class="form-group">
+              <label for="groupFormName" class="section-label">Nome do Grupo *</label>
+              <input type="text" id="groupFormName" class="input-field" placeholder="Ex: Meu Canal de Games, Cortes Virais..." required>
+            </div>
+
+            <div class="form-group">
+              <label for="groupFormDescription" class="section-label">Descrição (Opcional)</label>
+              <input type="text" id="groupFormDescription" class="input-field" placeholder="Ex: Publica no Instagram, Facebook e YouTube simultaneamente">
+            </div>
+
+            <div class="form-group">
+              <label class="section-label">Cor do Ícone</label>
+              <div style="display: flex; gap: 0.5rem; align-items: center;">
+                <input type="color" id="groupFormColor" value="#6366f1" style="width: 44px; height: 38px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.2); background: transparent; cursor: pointer;">
+                <span style="color: #94a3b8; font-size: 0.85rem;">Escolha a cor de destaque para este grupo</span>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="section-label">Redes Sociais Associadas *</label>
+              <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                <label style="display: flex; align-items: center; gap: 0.6rem; color: #f1f5f9; font-size: 0.9rem; cursor: pointer;">
+                  <input type="checkbox" name="groupPlatforms" value="instagram" checked style="accent-color: #e1306c; width: 18px; height: 18px;">
+                  <i class="fa-brands fa-instagram" style="color: #e1306c;"></i> Instagram (@gamefyofc)
+                </label>
+                <label style="display: flex; align-items: center; gap: 0.6rem; color: #f1f5f9; font-size: 0.9rem; cursor: pointer;">
+                  <input type="checkbox" name="groupPlatforms" value="facebook" checked style="accent-color: #1877f2; width: 18px; height: 18px;">
+                  <i class="fa-brands fa-facebook" style="color: #1877f2;"></i> Facebook (Gamefy Ofic)
+                </label>
+                <label style="display: flex; align-items: center; gap: 0.6rem; color: #f1f5f9; font-size: 0.9rem; cursor: pointer;">
+                  <input type="checkbox" name="groupPlatforms" value="youtube" checked style="accent-color: #ff0000; width: 18px; height: 18px;">
+                  <i class="fa-brands fa-youtube" style="color: #ff0000;"></i> YouTube (GAMEFY_OFICIAL)
+                </label>
+              </div>
+            </div>
+
+            <div class="modal-actions-bar">
+              <button type="submit" class="btn-submit" style="background: linear-gradient(135deg, #6366f1, #4f46e5);">
+                <i class="fa-solid fa-check"></i> Salvar Grupo
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal de Autenticação & Usuário -->
+    <div class="modal-overlay" id="authModal" style="display: none;">
+      <div class="modal-card" style="max-width: 440px;">
+        <div class="modal-header">
+          <h3 id="authModalTitle"><i class="fa-solid fa-user-lock" style="color: #6366f1;"></i> Acesso do Usuário</h3>
+          <button class="modal-close" onclick="window.closeAuthModal()">&times;</button>
+        </div>
+        <div class="modal-content">
+          <!-- Abas Login / Cadastro -->
+          <div style="display: flex; gap: 0.5rem; margin-bottom: 1.25rem; background: rgba(0,0,0,0.25); padding: 4px; border-radius: 10px;">
+            <button type="button" id="authTabLogin" class="nav-tab active" style="flex: 1; text-align: center; border-radius: 8px; justify-content: center;" onclick="window.switchAuthTab('login')">
+              Entrar
+            </button>
+            <button type="button" id="authTabRegister" class="nav-tab" style="flex: 1; text-align: center; border-radius: 8px; justify-content: center;" onclick="window.switchAuthTab('register')">
+              Cadastrar
+            </button>
+          </div>
+
+          <!-- Form Login -->
+          <form id="loginForm" onsubmit="window.handleLoginSubmit(event)">
+            <div class="form-group">
+              <label for="loginEmail" class="section-label">E-mail</label>
+              <input type="email" id="loginEmail" class="input-field" placeholder="seuemail@exemplo.com" required>
+            </div>
+            <div class="form-group">
+              <label for="loginPassword" class="section-label">Senha</label>
+              <input type="password" id="loginPassword" class="input-field" placeholder="••••••••" required>
+            </div>
+            <div style="background: rgba(99,102,241,0.1); border: 1px solid rgba(99,102,241,0.25); border-radius: 8px; padding: 0.75rem; margin-bottom: 1rem; font-size: 0.8rem; color: #c7d2fe;">
+              <i class="fa-solid fa-crown" style="color: #fbbf24;"></i> <strong>Conta Root Inicial:</strong><br>
+              E-mail: <code>admin@gamefy.com</code> | Senha: <code>GamefyAdmin2026!</code>
+            </div>
+            <button type="submit" class="btn-submit" style="width: 100%;">
+              <i class="fa-solid fa-right-to-bracket"></i> Entrar no Sistema
+            </button>
+          </form>
+
+          <!-- Form Cadastro -->
+          <form id="registerForm" style="display: none;" onsubmit="window.handleRegisterSubmit(event)">
+            <div class="form-group">
+              <label for="registerName" class="section-label">Nome Completo</label>
+              <input type="text" id="registerName" class="input-field" placeholder="Ex: Lucas Silva" required>
+            </div>
+            <div class="form-group">
+              <label for="registerEmail" class="section-label">E-mail</label>
+              <input type="email" id="registerEmail" class="input-field" placeholder="seuemail@exemplo.com" required>
+            </div>
+            <div class="form-group">
+              <label for="registerPassword" class="section-label">Senha (mínimo 6 caracteres)</label>
+              <input type="password" id="registerPassword" class="input-field" placeholder="••••••••" required minlength="6">
+            </div>
+            <button type="submit" class="btn-submit" style="width: 100%; background: linear-gradient(135deg, #10b981, #059669);">
+              <i class="fa-solid fa-user-plus"></i> Criar Minha Conta
+            </button>
+          </form>
+
+          <!-- Painel de Conta Conectada (quando já logado) -->
+          <div id="loggedInPanel" style="display: none; text-align: center; padding: 1rem 0;">
+            <div style="width: 60px; height: 60px; border-radius: 50%; background: linear-gradient(135deg, #6366f1, #a855f7); display: flex; align-items: center; justify-content: center; font-size: 1.5rem; color: white; margin: 0 auto 0.75rem; font-weight: 800;" id="userModalAvatar">R</div>
+            <h4 style="color: #fff; font-size: 1.15rem; margin-bottom: 0.25rem;" id="userModalName">Administrador Root</h4>
+            <p style="color: #94a3b8; font-size: 0.85rem; margin-bottom: 0.5rem;" id="userModalEmail">admin@gamefy.com</p>
+            <span class="role-badge-tag root" id="userModalRoleBadge" style="margin-bottom: 1.5rem; display: inline-block;">ROOT</span>
+            
+            <div style="display: flex; gap: 0.75rem; margin-top: 1.25rem;">
+              <button type="button" class="btn-card-action" style="flex: 1; background: rgba(239, 68, 68, 0.2); color: #f87171; border: 1px solid rgba(239,68,68,0.3);" onclick="window.handleLogout()">
+                <i class="fa-solid fa-power-off"></i> Sair da Conta
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal de Criar Usuário (Admin) -->
+    <div class="modal-overlay" id="createUserModal" style="display: none;">
+      <div class="modal-card" style="max-width: 460px;">
+        <div class="modal-header">
+          <h3><i class="fa-solid fa-user-plus" style="color: #f59e0b;"></i> Adicionar Novo Usuário</h3>
+          <button class="modal-close" onclick="document.getElementById('createUserModal').style.display='none'">&times;</button>
+        </div>
+        <div class="modal-content">
+          <form id="adminCreateUserForm" onsubmit="window.handleAdminCreateUser(event)">
+            <div class="form-group">
+              <label class="section-label">Nome Completo *</label>
+              <input type="text" id="adminNewUserName" class="input-field" placeholder="Ex: Lucas Ferreira" required>
+            </div>
+            <div class="form-group">
+              <label class="section-label">E-mail *</label>
+              <input type="email" id="adminNewUserEmail" class="input-field" placeholder="email@exemplo.com" required>
+            </div>
+            <div class="form-group">
+              <label class="section-label">Senha Inicial *</label>
+              <input type="password" id="adminNewUserPassword" class="input-field" placeholder="••••••••" required minlength="6">
+            </div>
+            <div class="form-group">
+              <label class="section-label">Nível de Permissão</label>
+              <select id="adminNewUserRole" class="input-field">
+                <option value="user">Usuário Comum (Gerencia próprios grupos e posts)</option>
+                <option value="admin">Administrador (Gerencia usuários e relatórios)</option>
+                <option value="member">Membro de Grupo (Acesso restrito)</option>
+              </select>
+            </div>
+            <div class="modal-actions-bar">
+              <button type="submit" class="btn-submit" style="background: linear-gradient(135deg, #f59e0b, #d97706);">
+                <i class="fa-solid fa-check"></i> Cadastrar Usuário
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- Toast de Notificações -->
+    <div class="toast-container" id="toastContainer"></div>
+  </div>
+
+  <script src="/js/app.js?v=9.1.0"></script>
+</body>
+</html>

@@ -1,0 +1,8 @@
+node_modules/
+.env
+database/fallback_storage.json
+uploads/*
+!uploads/.gitkeep
+*.log
+.DS_Store
+Thumbs.db
