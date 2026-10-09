@@ -89,7 +89,7 @@ class PublisherService {
   async publishToInstagram(post) {
     const savedAccount = await db.getAccount('instagram');
     const igUserId = savedAccount?.account_id || process.env.IG_USER_ID || '17841439279415952';
-    const token = process.env.IG_PAGE_TOKEN || savedAccount?.access_token || process.env.META_ACCESS_TOKEN;
+    const token = savedAccount?.access_token || process.env.IG_PAGE_TOKEN || process.env.META_ACCESS_TOKEN;
     const accLabel = savedAccount?.account_name || '@gamefyofc';
 
     const isSimulated = process.env.SIMULATE_API_PUBLISH === 'true' || 
@@ -240,18 +240,33 @@ class PublisherService {
       const errMsg = apiErr.response?.data?.error?.message || apiErr.message;
       console.warn(`[Instagram Publish Warning] ${errMsg}`);
 
+      const isTokenExpired = errMsg.includes('Session has expired') || 
+                             errMsg.includes('Error validating access token') || 
+                             apiErr.response?.data?.error?.code === 190;
+
+      if (isTokenExpired) {
+        return {
+          success: false,
+          platform: 'instagram',
+          status: 'failed',
+          visibility: 'unknown',
+          error: 'O Token de Acesso da Meta expirou. Atualize o token da sua conta em Contas Conectadas.',
+          diagnostics: `Aviso Meta: ${errMsg}`,
+          tokenExpired: true,
+          accountName: accLabel,
+          publicUrl: 'https://www.instagram.com/gamefyofc'
+        };
+      }
+
       return {
-        success: true,
+        success: false,
         platform: 'instagram',
-        status: 'published_with_restrictions',
-        visibility: 'restricted',
-        postId: `ig_fallback_${Date.now()}`,
-        simulated: true,
+        status: 'failed',
+        visibility: 'unknown',
+        error: `Erro ao publicar no Instagram: ${errMsg}`,
+        diagnostics: `Aviso Meta: ${errMsg}`,
         accountName: accLabel,
-        format: igFormat,
-        publicUrl: 'https://www.instagram.com/gamefyofc',
-        diagnostics: `Aviso Meta: ${errMsg}. Arquivo registrado para a conta oficial ${accLabel}.`,
-        message: `Publicação salva para ${accLabel}. Verifique se o vídeo possui URL pública externa com SSL para download direto pela Meta.`
+        publicUrl: 'https://www.instagram.com/gamefyofc'
       };
     }
   }
@@ -262,7 +277,7 @@ class PublisherService {
   async publishToFacebook(post) {
     const savedAccount = await db.getAccount('facebook');
     const pageId = savedAccount?.account_id || process.env.FB_PAGE_ID || '1097087796819080';
-    const token = process.env.FB_PAGE_TOKEN || savedAccount?.access_token || process.env.META_ACCESS_TOKEN;
+    const token = savedAccount?.access_token || process.env.FB_PAGE_TOKEN || process.env.META_ACCESS_TOKEN;
     const accLabel = savedAccount?.account_name || 'Gamefy Ofic';
 
     const isSimulated = process.env.SIMULATE_API_PUBLISH === 'true' || 
@@ -428,17 +443,33 @@ class PublisherService {
       const errMsg = apiErr.response?.data?.error?.message || apiErr.message;
       console.warn(`[Facebook Publish Warning] ${errMsg}`);
 
+      const isTokenExpired = errMsg.includes('Session has expired') || 
+                             errMsg.includes('Error validating access token') || 
+                             apiErr.response?.data?.error?.code === 190;
+
+      if (isTokenExpired) {
+        return {
+          success: false,
+          platform: 'facebook',
+          status: 'failed',
+          visibility: 'unknown',
+          error: 'O Token de Acesso da Página do Facebook expirou. Atualize o token em Contas Conectadas.',
+          diagnostics: `Aviso Meta: ${errMsg}`,
+          tokenExpired: true,
+          accountName: accLabel,
+          publicUrl: `https://www.facebook.com/${targetId}`
+        };
+      }
+
       return {
-        success: true,
+        success: false,
         platform: 'facebook',
-        status: 'published_with_restrictions',
-        visibility: 'restricted',
-        postId: `fb_fallback_${Date.now()}`,
-        simulated: true,
+        status: 'failed',
+        visibility: 'unknown',
+        error: `Erro ao publicar no Facebook: ${errMsg}`,
+        diagnostics: `Aviso Meta: ${errMsg}`,
         accountName: accLabel,
-        publicUrl: `https://www.facebook.com/${targetId}`,
-        diagnostics: `Aviso Meta: ${errMsg}. Nota: Se o Meta App estiver em Modo de Desenvolvimento, apenas Administradores do app conseguem visualizar as postagens publicamente.`,
-        message: `Publicação registrada na página ${accLabel}.`
+        publicUrl: `https://www.facebook.com/${targetId}`
       };
     }
   }

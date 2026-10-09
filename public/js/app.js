@@ -808,40 +808,13 @@ document.addEventListener('DOMContentLoaded', () => {
           const modeMsg = state.isScheduledMode ? 'Postagem agendada com sucesso!' : 'Publicação realizada com sucesso!';
           showToast(modeMsg, 'success');
           
-          if (data.publishResults) {
-            const results = data.publishResults;
-            if (results.instagram && results.instagram.success) {
-              const formatLabel = (results.instagram.format || 'post').toUpperCase();
-              showToast(`📸 Instagram: Publicado como ${formatLabel}!`, 'info');
-            }
-            if (results.youtube && results.youtube.success) {
-              showToast(`▶️ YouTube: Vídeo processado no canal!`, 'info');
-            }
-            if (results.facebook && results.facebook.success) {
-              if (results.facebook.actionRequired) {
-                try {
-                  if (navigator.clipboard && navigator.clipboard.writeText) {
-                    navigator.clipboard.writeText(caption);
-                  }
-                } catch (_) {}
-                showToast(`📋 Legenda copiada! Abrindo publicação para a Página Gamefy...`, 'success');
-                showFacebookConfirmModal(caption, results.facebook);
-                
-                // Limpa o formulário mantendo o modal visível
-                postForm.reset();
-                if (btnRemoveMedia) btnRemoveMedia.click();
-                if (btnRemoveThumbnail) btnRemoveThumbnail.click();
-                if (charCounter) charCounter.textContent = '0 caracteres';
-                postCaption.dispatchEvent(new Event('input'));
-                postTitle.dispatchEvent(new Event('input'));
-                if (modeDirect) modeDirect.click();
-                updateSystemStatus();
-                return;
-              } else {
-                showToast(`📘 Facebook: Publicação enviada com sucesso oficial para a Página Gamefy!`, 'info');
-              }
-            }
-          }
+          const createdPost = data.post || {
+            caption,
+            title: postTitle.value,
+            media_url: state.selectedFile ? URL.createObjectURL(state.selectedFile) : null,
+            media_type: state.selectedFile?.type?.startsWith('video/') ? 'video' : 'image'
+          };
+          const results = data.publishResults;
 
           postForm.reset();
           if (btnRemoveMedia) btnRemoveMedia.click();
@@ -849,13 +822,21 @@ document.addEventListener('DOMContentLoaded', () => {
           if (charCounter) charCounter.textContent = '0 caracteres';
           postCaption.dispatchEvent(new Event('input'));
           postTitle.dispatchEvent(new Event('input'));
-          
           if (modeDirect) modeDirect.click();
 
           updateSystemStatus();
-          const tabGal = document.getElementById('tabGallery');
-          if (tabGal) tabGal.click();
+
+          // Abre o Modal Flutuante com Links Diretos para Visualizar Online
+          if (window.showPublishSuccessModal && results) {
+            window.showPublishSuccessModal(createdPost, results);
+          } else {
+            const tabGal = document.getElementById('tabGallery');
+            if (tabGal) tabGal.click();
+          }
         } else {
+          if (data.publishResults && window.showPublishSuccessModal) {
+            window.showPublishSuccessModal(data.post || { caption, title: postTitle.value }, data.publishResults, true);
+          }
           showToast(data.error || 'Erro ao realizar publicação.', 'error');
         }
       } catch (err) {
@@ -867,6 +848,202 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     });
   }
+
+  window.closePublishSuccessModal = function() {
+    const modal = document.getElementById('publishSuccessModal');
+    if (modal) modal.style.display = 'none';
+  };
+
+  window.showPublishSuccessModal = function(post = {}, publishResults = {}, isFailureOnly = false) {
+    const modal = document.getElementById('publishSuccessModal');
+    if (!modal) return;
+
+    const titleEl = document.getElementById('publishSuccessTitle');
+    const subtitleEl = document.getElementById('publishSuccessSubtitle');
+    const iconWrapper = document.getElementById('publishSuccessIconWrapper');
+    const iconEl = document.getElementById('publishSuccessIcon');
+    const previewEl = document.getElementById('publishSuccessMediaPreview');
+    const linksListEl = document.getElementById('publishSuccessLinksList');
+
+    if (!linksListEl) return;
+
+    const results = publishResults || {};
+    const platformKeys = Object.keys(results);
+    const anySuccess = platformKeys.some(k => results[k]?.success);
+    const allSuccess = platformKeys.length > 0 && platformKeys.every(k => results[k]?.success);
+
+    if (allSuccess) {
+      if (titleEl) titleEl.textContent = '🎉 Publicação Confirmada Online!';
+      if (subtitleEl) subtitleEl.textContent = 'Seu conteúdo já está publicado e disponível para visualização!';
+      if (iconWrapper) {
+        iconWrapper.style.background = 'rgba(16, 185, 129, 0.15)';
+        iconWrapper.style.borderColor = 'rgba(16, 185, 129, 0.3)';
+        iconWrapper.style.color = '#10b981';
+      }
+      if (iconEl) iconEl.className = 'fa-solid fa-circle-check';
+    } else if (anySuccess) {
+      if (titleEl) titleEl.textContent = '⚠️ Publicado com Restrições / Parcial';
+      if (subtitleEl) subtitleEl.textContent = 'Algumas redes foram publicadas e outras precisam de atenção.';
+      if (iconWrapper) {
+        iconWrapper.style.background = 'rgba(245, 158, 11, 0.15)';
+        iconWrapper.style.borderColor = 'rgba(245, 158, 11, 0.3)';
+        iconWrapper.style.color = '#f59e0b';
+      }
+      if (iconEl) iconEl.className = 'fa-solid fa-triangle-exclamation';
+    } else {
+      if (titleEl) titleEl.textContent = '❌ Falha na Publicação';
+      if (subtitleEl) subtitleEl.textContent = 'A API das redes sociais recusou o envio (veja os detalhes abaixo).';
+      if (iconWrapper) {
+        iconWrapper.style.background = 'rgba(239, 68, 68, 0.15)';
+        iconWrapper.style.borderColor = 'rgba(239, 68, 68, 0.3)';
+        iconWrapper.style.color = '#ef4444';
+      }
+      if (iconEl) iconEl.className = 'fa-solid fa-circle-xmark';
+    }
+
+    // Prévia de mídia e legenda
+    if (previewEl) {
+      let mediaPreviewHtml = '';
+      const mediaUrl = post.media_url || post.mediaUrl;
+      const mediaType = post.media_type || post.mediaType;
+      const isVideo = (mediaType === 'video') || (mediaUrl && /\.(mp4|webm|mov|m4v)$/i.test(mediaUrl));
+
+      if (mediaUrl) {
+        if (isVideo) {
+          mediaPreviewHtml = `
+            <div style="position: relative; width: 100%; max-height: 200px; border-radius: 12px; overflow: hidden; background: #000; margin-bottom: 0.85rem; box-shadow: 0 4px 15px rgba(0,0,0,0.5);">
+              <video src="${mediaUrl}" controls muted playsinline style="width: 100%; max-height: 200px; object-fit: contain;"></video>
+            </div>
+          `;
+        } else {
+          mediaPreviewHtml = `
+            <div style="width: 100%; max-height: 200px; border-radius: 12px; overflow: hidden; background: #080c14; margin-bottom: 0.85rem; text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.5);">
+              <img src="${mediaUrl}" style="max-width: 100%; max-height: 200px; object-fit: contain; border-radius: 10px;" onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1542751371-adc38448a05e?w=600&auto=format&fit=crop&q=80'">
+            </div>
+          `;
+        }
+      }
+
+      const captionText = post.caption || '';
+      previewEl.innerHTML = `
+        ${mediaPreviewHtml}
+        <div style="background: rgba(15, 23, 42, 0.7); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 10px; padding: 0.75rem 1rem;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem;">
+            <strong style="color: #fff; font-size: 0.88rem;">${escapeHtml(post.title || 'Publicação')}</strong>
+            <button type="button" id="btnCopyCaptionModalSuccess" style="background: rgba(56, 189, 248, 0.15); border: 1px solid rgba(56, 189, 248, 0.3); color: #38bdf8; border-radius: 6px; padding: 0.2rem 0.5rem; font-size: 0.72rem; font-weight: 700; cursor: pointer;">
+              <i class="fa-regular fa-copy"></i> Copiar Legenda
+            </button>
+          </div>
+          <p style="margin: 0; font-size: 0.8rem; color: #94a3b8; line-height: 1.4; max-height: 55px; overflow-y: auto;">
+            ${escapeHtml(captionText)}
+          </p>
+        </div>
+      `;
+
+      const btnCopySuccess = document.getElementById('btnCopyCaptionModalSuccess');
+      if (btnCopySuccess) {
+        btnCopySuccess.addEventListener('click', () => {
+          try {
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+              navigator.clipboard.writeText(captionText);
+              showToast('📋 Legenda copiada!', 'info');
+              btnCopySuccess.innerHTML = '<i class="fa-solid fa-check"></i> Copiado!';
+            }
+          } catch (_) {}
+        });
+      }
+    }
+
+    // Gerar cartões para cada rede
+    linksListEl.innerHTML = '';
+
+    if (platformKeys.length > 0) {
+      platformKeys.forEach(plat => {
+        const item = results[plat];
+        const card = document.createElement('div');
+        card.style.cssText = 'border-radius: 12px; padding: 0.85rem 1rem; display: flex; align-items: center; justify-content: space-between; gap: 0.75rem;';
+
+        let iconBg = '#3b82f6';
+        let platIcon = 'fa-share-nodes';
+        let platName = capitalize(plat);
+        let defaultUrl = '#';
+
+        if (plat === 'instagram') {
+          iconBg = 'linear-gradient(45deg, #f09433, #dc2743, #bc1888)';
+          platIcon = 'fa-instagram';
+          platName = 'Instagram (@gamefyofc)';
+          defaultUrl = 'https://www.instagram.com/gamefyofc';
+        } else if (plat === 'facebook') {
+          iconBg = '#1877f2';
+          platIcon = 'fa-facebook';
+          platName = 'Facebook (Gamefy Ofic)';
+          defaultUrl = 'https://www.facebook.com/1097087796819080';
+        } else if (plat === 'youtube') {
+          iconBg = '#ff0000';
+          platIcon = 'fa-youtube';
+          platName = 'YouTube (GAMEFY_OFICIAL)';
+          defaultUrl = 'https://www.youtube.com/@GAMEFY_OFICIAL';
+        }
+
+        const liveUrl = item.publicUrl || item.postUrl || defaultUrl;
+
+        if (item.success) {
+          card.style.background = 'rgba(16, 185, 129, 0.08)';
+          card.style.border = '1px solid rgba(16, 185, 129, 0.25)';
+
+          card.innerHTML = `
+            <div style="display: flex; align-items: center; gap: 0.75rem;">
+              <div style="width: 40px; height: 40px; border-radius: 10px; background: ${iconBg}; display: flex; align-items: center; justify-content: center; color: white; font-size: 1.2rem; flex-shrink: 0;">
+                <i class="fa-brands ${platIcon}"></i>
+              </div>
+              <div>
+                <div style="font-weight: 700; color: #fff; font-size: 0.92rem;">${platName}</div>
+                <div style="font-size: 0.75rem; color: #10b981; font-weight: 600;">
+                  <i class="fa-solid fa-circle-check"></i> Publicado Oficialmente
+                </div>
+              </div>
+            </div>
+            <a href="${liveUrl}" target="_blank" rel="noopener noreferrer" class="btn-submit" style="text-decoration: none; padding: 0.6rem 1rem; font-size: 0.82rem; font-weight: 700; background: ${iconBg}; white-space: nowrap; box-shadow: 0 4px 12px rgba(0,0,0,0.3); display: inline-flex; align-items: center; gap: 0.4rem;">
+              <i class="fa-solid fa-arrow-up-right-from-square"></i> Abrir no ${capitalize(plat)}
+            </a>
+          `;
+        } else {
+          card.style.background = 'rgba(239, 68, 68, 0.08)';
+          card.style.border = '1px solid rgba(239, 68, 68, 0.25)';
+
+          const isTokenExp = item.tokenExpired || (item.error && (item.error.includes('Token') || item.error.includes('expirou')));
+          const errDetail = item.error || 'Falha ao conectar com a API';
+
+          card.innerHTML = `
+            <div style="display: flex; align-items: center; gap: 0.75rem; flex: 1;">
+              <div style="width: 40px; height: 40px; border-radius: 10px; background: #ef4444; display: flex; align-items: center; justify-content: center; color: white; font-size: 1.2rem; flex-shrink: 0;">
+                <i class="fa-brands ${platIcon}"></i>
+              </div>
+              <div style="min-width: 0;">
+                <div style="font-weight: 700; color: #fff; font-size: 0.92rem;">${platName}</div>
+                <div style="font-size: 0.75rem; color: #fca5a5; line-height: 1.3;" title="${escapeHtml(errDetail)}">
+                  ❌ ${escapeHtml(errDetail)}
+                </div>
+              </div>
+            </div>
+            ${isTokenExp ? `
+              <button type="button" onclick="window.closePublishSuccessModal(); window.openConnectModal('${plat}');" class="btn-card-action" style="padding: 0.55rem 0.85rem; font-size: 0.78rem; background: rgba(239, 68, 68, 0.2); color: #fca5a5; border-color: rgba(239,68,68,0.4); white-space: nowrap; font-weight: 700;">
+                <i class="fa-solid fa-key"></i> Renovar Token
+              </button>
+            ` : `
+              <a href="${liveUrl}" target="_blank" rel="noopener noreferrer" class="btn-card-action" style="padding: 0.55rem 0.85rem; font-size: 0.78rem; white-space: nowrap;">
+                <i class="fa-solid fa-arrow-up-right-from-square"></i> Ver Canal
+              </a>
+            `}
+          `;
+        }
+
+        linksListEl.appendChild(card);
+      });
+    }
+
+    modal.style.display = 'flex';
+  };
 
   function showFacebookConfirmModal(caption, fbResult = {}) {
     if (!postModal) return;
@@ -1140,18 +1317,22 @@ document.addEventListener('DOMContentLoaded', () => {
       `;
 
       if (post.media_url) {
-        if (post.media_type === 'video') {
+        const isVideo = (post.media_type === 'video') || (post.media_url && /\.(mp4|webm|mov|m4v)$/i.test(post.media_url));
+        if (isVideo) {
           mediaHtml = `
-            <div class="gallery-media">
+            <div class="gallery-media" style="position: relative; background: #080c14;">
               <span class="media-badge-type"><i class="fa-solid fa-video"></i> Vídeo</span>
-              <video src="${post.media_url}" preload="metadata" muted></video>
+              <video src="${post.media_url}" preload="metadata" muted playsinline style="width: 100%; height: 100%; object-fit: cover;"></video>
+              <div style="position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; pointer-events: none; background: rgba(0,0,0,0.25);">
+                <i class="fa-solid fa-circle-play" style="color: white; font-size: 2.2rem; opacity: 0.9; filter: drop-shadow(0 2px 8px rgba(0,0,0,0.7));"></i>
+              </div>
             </div>
           `;
         } else {
           mediaHtml = `
             <div class="gallery-media">
               <span class="media-badge-type"><i class="fa-solid fa-image"></i> Foto</span>
-              <img src="${post.media_url}" alt="Post mídia" loading="lazy">
+              <img src="${post.media_url}" alt="Post mídia" loading="lazy" onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1542751371-adc38448a05e?w=600&auto=format&fit=crop&q=80'">
             </div>
           `;
         }
@@ -1495,8 +1676,20 @@ document.addEventListener('DOMContentLoaded', () => {
                   mini.className = 'feed-mini-post';
                   
                   let mediaContent = '';
-                  if (item.media_url) {
-                    mediaContent = `<img src="${item.media_url}" alt="Post" loading="lazy">`;
+                  const isVideoFile = (item.media_type === 'video') || 
+                                      (item.media_url && /\.(mp4|webm|mov|m4v)$/i.test(item.media_url));
+
+                  if (isVideoFile && item.media_url) {
+                    mediaContent = `
+                      <div style="position: relative; width: 100%; height: 100%; background: #080c14; overflow: hidden;">
+                        <video src="${item.media_url}" preload="metadata" muted playsinline style="width: 100%; height: 100%; object-fit: cover; pointer-events: none;"></video>
+                        <div style="position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.25);">
+                          <i class="fa-solid fa-play" style="color: white; font-size: 0.9rem; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.6));"></i>
+                        </div>
+                      </div>
+                    `;
+                  } else if (item.media_url) {
+                    mediaContent = `<img src="${item.media_url}" alt="Post" loading="lazy" onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1542751371-adc38448a05e?w=300&auto=format&fit=crop&q=80'">`;
                   } else {
                     mediaContent = `
                       <div style="width:100%;height:100%;background:rgba(255,255,255,0.03);display:flex;align-items:center;justify-content:center;padding:0.4rem;text-align:center;font-size:0.65rem;color:var(--text-muted);line-height:1.2;overflow:hidden;">

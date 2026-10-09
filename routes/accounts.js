@@ -1,7 +1,29 @@
 const express = require('express');
 const router = express.Router();
 const axios = require('axios');
+const fs = require('fs');
+const path = require('path');
 const { db } = require('../database/connection');
+
+function syncEnvToken(key, value) {
+  if (!value) return;
+  process.env[key] = value;
+  try {
+    const envPath = path.join(__dirname, '..', '.env');
+    if (fs.existsSync(envPath)) {
+      let content = fs.readFileSync(envPath, 'utf8');
+      const regex = new RegExp(`^${key}=.*$`, 'm');
+      if (regex.test(content)) {
+        content = content.replace(regex, `${key}=${value}`);
+      } else {
+        content += `\n${key}=${value}`;
+      }
+      fs.writeFileSync(envPath, content);
+    }
+  } catch (e) {
+    console.warn(`[SyncEnv] Erro ao sincronizar ${key}:`, e.message);
+  }
+}
 
 // Contas oficiais e permanentes da Gamefy (nunca desconectam)
 const DEFAULT_GAMEFY_ACCOUNTS = {
@@ -479,6 +501,18 @@ router.post('/:platform/connect', async (req, res) => {
       avatarUrl,
       extraInfo
     });
+
+    // Sincroniza imediatamente com .env e process.env
+    if (platform === 'instagram') {
+      if (accessToken) syncEnvToken('IG_PAGE_TOKEN', accessToken);
+      if (accountId) syncEnvToken('IG_USER_ID', accountId);
+    } else if (platform === 'facebook') {
+      if (accessToken) syncEnvToken('FB_PAGE_TOKEN', accessToken);
+      if (accountId) syncEnvToken('FB_PAGE_ID', accountId);
+    } else if (platform === 'youtube') {
+      if (accessToken) syncEnvToken('YOUTUBE_ACCESS_TOKEN', accessToken);
+      if (apiKey) syncEnvToken('YOUTUBE_API_KEY', apiKey);
+    }
 
     res.json({
       success: true,

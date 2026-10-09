@@ -160,9 +160,10 @@ router.post('/', upload.fields([
       if (!anySuccess) {
         const firstError = Object.values(publishResults).find(r => !r.success)?.error || 'Falha no envio';
         await db.updatePostStatus(post.id, 'failed', null, firstError);
-        return res.status(500).json({
+        return res.status(400).json({
           success: false,
-          error: `Erro ao publicar: ${firstError}`,
+          error: firstError,
+          publishResults,
           post: await db.getPostById(post.id)
         });
       }
