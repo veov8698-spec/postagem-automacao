@@ -760,16 +760,22 @@ document.addEventListener('DOMContentLoaded', () => {
             postTitle.dispatchEvent(new Event('input'));
           }
 
+          // Se a IA retornou horários de pico personalizados para o perfil/conteúdo, atualiza o compositor e o calendário
+          if (Array.isArray(data.peakTimes) && data.peakTimes.length >= 3) {
+            window.updateDynamicPeakTimes(data.peakTimes);
+          }
+
           if (aiCaptionFeedback && aiCaptionFeedbackText) {
             const engineLabel = data.source === 'gemini' ? 'Google Gemini' : (data.source === 'openai' ? 'ChatGPT (OpenAI)' : 'Assistente IA Integrado');
-            aiCaptionFeedbackText.textContent = `Legenda, título e hashtags aperfeiçoados com sucesso via ${engineLabel}!`;
+            const brandMsg = data.brandName ? ` personalizado para ${data.brandName}` : '';
+            aiCaptionFeedbackText.textContent = `Legenda, créditos e 3 horários de pico gerados via ${engineLabel}${brandMsg}!`;
             aiCaptionFeedback.style.display = 'flex';
             setTimeout(() => {
               if (aiCaptionFeedback) aiCaptionFeedback.style.display = 'none';
             }, 6000);
           }
 
-          showToast('Legenda e hashtags melhoradas com sucesso!', 'success');
+          showToast('Legenda e 3 horários de pico atualizados com sucesso!', 'success');
         } else {
           showToast(data.error || 'Não foi possível melhorar a legenda.', 'error');
         }
@@ -830,6 +836,9 @@ document.addEventListener('DOMContentLoaded', () => {
       if (modeDirect) modeDirect.classList.remove('active');
       if (scheduleBox) scheduleBox.style.display = 'block';
       setupScheduleMinTime();
+      if (typeof window.selectComposerPeakTime === 'function' && (!scheduleDateTime || !scheduleDateTime.value)) {
+        window.selectComposerPeakTime(0);
+      }
       if (submitBtnText) submitBtnText.textContent = 'Confirmar Agendamento';
       if (submitBtnIcon) submitBtnIcon.className = 'fa-regular fa-calendar-check';
     });
@@ -3421,6 +3430,129 @@ document.addEventListener('DOMContentLoaded', () => {
   let calSelectedDate = new Date().toISOString().split('T')[0];
   let cachedCalendarPosts = [];
 
+  let stateCurrentPeakTimes = [
+    { time: '12:00', label: '12:00 - Almoço Gamer', icon: '☀️', desc: 'Shorts rápidos e novidades com alto consumo mobile' },
+    { time: '18:30', label: '18:30 - Fim de Tarde', icon: '🌇', desc: 'Pico de retorno do trabalho/estudos e feed ativo' },
+    { time: '21:15', label: '21:15 - Prime Time Noturno', icon: '🌙', desc: 'Audiência máxima online, gameplays e retenção' }
+  ];
+
+  window.updateDynamicPeakTimes = function(newPeaks) {
+    if (!Array.isArray(newPeaks) || newPeaks.length < 3) return;
+
+    stateCurrentPeakTimes = [
+      {
+        time: (newPeaks[0].time || '12:00').slice(0, 5),
+        label: newPeaks[0].label || `${newPeaks[0].time} - 1º Pico`,
+        icon: '☀️',
+        desc: newPeaks[0].reason || 'Pico de audiência inicial'
+      },
+      {
+        time: (newPeaks[1].time || '18:30').slice(0, 5),
+        label: newPeaks[1].label || `${newPeaks[1].time} - 2º Pico`,
+        icon: '🌇',
+        desc: newPeaks[1].reason || 'Maior engajamento feed'
+      },
+      {
+        time: (newPeaks[2].time || '21:15').slice(0, 5),
+        label: newPeaks[2].label || `${newPeaks[2].time} - 3º Pico`,
+        icon: '🌙',
+        desc: newPeaks[2].reason || 'Retenção máxima e prime time'
+      }
+    ];
+
+    // Atualiza os 3 botões rápidos do compositor
+    const p1 = stateCurrentPeakTimes[0];
+    const p2 = stateCurrentPeakTimes[1];
+    const p3 = stateCurrentPeakTimes[2];
+
+    const cTime1 = document.getElementById('peakChipTime1');
+    const cLbl1 = document.getElementById('peakChipLabel1');
+    const cTime2 = document.getElementById('peakChipTime2');
+    const cLbl2 = document.getElementById('peakChipLabel2');
+    const cTime3 = document.getElementById('peakChipTime3');
+    const cLbl3 = document.getElementById('peakChipLabel3');
+
+    if (cTime1) cTime1.textContent = p1.time;
+    if (cLbl1) cLbl1.textContent = `${p1.icon} ${p1.label.split('-')[1]?.trim() || p1.label}`;
+    if (cTime2) cTime2.textContent = p2.time;
+    if (cLbl2) cLbl2.textContent = `${p2.icon} ${p2.label.split('-')[1]?.trim() || p2.label}`;
+    if (cTime3) cTime3.textContent = p3.time;
+    if (cLbl3) cLbl3.textContent = `${p3.icon} ${p3.label.split('-')[1]?.trim() || p3.label}`;
+
+    // Atualiza os 3 cards da coluna do Calendário
+    const calTitle1 = document.getElementById('calPeakTitle1');
+    const calDesc1 = document.getElementById('calPeakDesc1');
+    const calBadge1 = document.getElementById('calPeakBadge1');
+    if (calTitle1) calTitle1.textContent = `${p1.icon} 1º Pico: ${p1.time} (${p1.label.split('-')[1]?.trim() || p1.label})`;
+    if (calDesc1) calDesc1.textContent = p1.desc;
+    if (calBadge1) calBadge1.textContent = p1.time;
+
+    const calTitle2 = document.getElementById('calPeakTitle2');
+    const calDesc2 = document.getElementById('calPeakDesc2');
+    const calBadge2 = document.getElementById('calPeakBadge2');
+    if (calTitle2) calTitle2.textContent = `${p2.icon} 2º Pico: ${p2.time} (${p2.label.split('-')[1]?.trim() || p2.label})`;
+    if (calDesc2) calDesc2.textContent = p2.desc;
+    if (calBadge2) calBadge2.textContent = p2.time;
+
+    const calTitle3 = document.getElementById('calPeakTitle3');
+    const calDesc3 = document.getElementById('calPeakDesc3');
+    const calBadge3 = document.getElementById('calPeakBadge3');
+    if (calTitle3) calTitle3.textContent = `${p3.icon} 3º Pico: ${p3.time} (${p3.label.split('-')[1]?.trim() || p3.label})`;
+    if (calDesc3) calDesc3.textContent = p3.desc;
+    if (calBadge3) calBadge3.textContent = p3.time;
+
+    renderSelectedDaySchedule();
+  };
+
+  window.selectComposerPeakTime = function(index) {
+    if (!stateCurrentPeakTimes[index]) return;
+    const peak = stateCurrentPeakTimes[index];
+    const targetDate = calSelectedDate || new Date().toISOString().split('T')[0];
+    const targetIso = `${targetDate}T${peak.time}`;
+
+    if (scheduleDateTime) {
+      scheduleDateTime.value = targetIso;
+      scheduleDateTime.dispatchEvent(new Event('change'));
+    }
+
+    [1, 2, 3].forEach(n => {
+      const btn = document.getElementById(`btnPeak${n}`);
+      if (btn) {
+        if (n === index + 1) {
+          btn.style.background = 'rgba(59, 130, 246, 0.25)';
+          btn.style.borderColor = '#3b82f6';
+          btn.classList.add('active');
+        } else {
+          btn.style.background = 'rgba(255, 255, 255, 0.05)';
+          btn.style.borderColor = 'rgba(255, 255, 255, 0.12)';
+          btn.classList.remove('active');
+        }
+      }
+    });
+
+    if (typeof saveCurrentSlotState === 'function') {
+      saveCurrentSlotState();
+    }
+
+    renderSelectedDaySchedule();
+    showToast(`⏰ Horário ${peak.time} selecionado! Sincronizado com a agenda do dia ${targetDate}.`, 'success');
+  };
+
+  window.handleCustomDateTimeChange = function(val) {
+    if (!val) return;
+    const [d, t] = val.split('T');
+    if (d && d !== calSelectedDate) {
+      calSelectedDate = d;
+      renderCalendar();
+    }
+    renderSelectedDaySchedule();
+  };
+
+  window.selectPeakFromCalendar = function(index) {
+    window.selectComposerPeakTime(index);
+    window.switchView('composer-view');
+  };
+
   const MONTH_NAMES = [
     'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
     'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
@@ -3525,11 +3657,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (badgeElem) badgeElem.textContent = `${dayPosts.length} vídeo(s)`;
 
-    const peakSlots = [
-      { time: '12:00', title: '1º Pico: 12:00 (Almoço Gamer)', icon: '☀️', desc: 'Shorts rápidos e novidades' },
-      { time: '18:30', title: '2º Pico: 18:30 (Fim de Tarde)', icon: '🌇', desc: 'Maior engajamento feed e YouTube' },
-      { time: '21:15', title: '3º Pico: 21:15 (Prime Time Noturno)', icon: '🌙', desc: 'Gameplays completas e retenção máxima' }
-    ];
+    const peakSlots = stateCurrentPeakTimes.map((p, i) => ({
+      time: p.time,
+      title: `${i + 1}º Pico: ${p.time} (${p.label.split('-')[1]?.trim() || p.label})`,
+      icon: p.icon || '⏰',
+      desc: p.desc || 'Horário de alta retenção'
+    }));
 
     listElem.innerHTML = '';
 
@@ -3591,7 +3724,7 @@ document.addEventListener('DOMContentLoaded', () => {
   window.applyPeakTimesToComposer = function() {
     window.setMultiVideoMode('batch');
 
-    const peakTimes = ['12:00', '18:30', '21:15'];
+    const peakTimes = stateCurrentPeakTimes.map(p => p.time);
     peakTimes.forEach((time, i) => {
       videoSlots[i].isScheduled = true;
       videoSlots[i].scheduledAt = `${calSelectedDate}T${time}`;
@@ -3602,7 +3735,7 @@ document.addEventListener('DOMContentLoaded', () => {
     loadSlotIntoForm(0);
     window.switchView('composer-view');
 
-    showToast(`🎯 Os 3 Horários de Pico (12:00, 18:30 e 21:15) foram distribuídos nos 3 slots da fila para ${calSelectedDate}!`, 'success');
+    showToast(`🎯 Os 3 Horários de Pico (${peakTimes.join(', ')}) foram distribuídos nos 3 slots da fila para ${calSelectedDate}!`, 'success');
   };
 
   // Botões de navegação de mês

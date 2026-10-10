@@ -280,7 +280,7 @@ router.delete('/:id', async (req, res) => {
 // IA Copywriting & Hashtags Generator (OpenAI ChatGPT, Google Gemini e Motor Nativo com Correção Gramatical Real)
 router.post('/ai-enhance', async (req, res) => {
   try {
-    const { title = '', caption = '', platforms = [], mediaType = 'image' } = req.body;
+    const { title = '', caption = '', platforms = [], mediaType = 'image', customChannelInfo = null } = req.body;
 
     const rawInput = `${title} ${caption}`.trim();
     if (!rawInput) {
@@ -293,43 +293,86 @@ router.post('/ai-enhance', async (req, res) => {
     const axios = require('axios');
     const targetPlatforms = Array.isArray(platforms) && platforms.length > 0 ? platforms.join(', ') : 'Instagram, Facebook, YouTube';
 
-    const promptSystem = `Você é o Criador de Conteúdo e Social Media Oficial do canal "GAMEFY" (@gamefyofc / Gamefy Ofic / GAMEFY_OFICIAL).
-Sua missão é pegar o rascunho do usuário, corrigir todos os erros gramaticais e ortográficos e produzir uma postagem/descrição profissional, dinâmica e equilibrada para YouTube, Instagram e Facebook.
+    // 1. Coleta informações das contas conectadas (para a I.A aprender o canal do usuário ou manter Gamefy)
+    let channelContext = '';
+    let isUserCustomChannel = false;
+    let customBrandName = 'GAMEFY';
+    let customCreditsBlock = `━━━━━━━━━━━━━━━━━━━━\n🎮 GAMEFY | O seu canal gamer oficial!\n🔴 YouTube: @gamefyofc (https://www.youtube.com/@gamefyofc)\n📸 Instagram: @gamefyofc (https://www.instagram.com/gamefyofc)\n📘 Facebook: Gamefy Ofic (https://www.facebook.com/1097087796819080)\n━━━━━━━━━━━━━━━━━━━━`;
+
+    try {
+      const allAccounts = await db.getAccounts();
+      const connected = (allAccounts || []).filter(a => a.is_connected);
+      
+      // Procura se tem canais customizados do usuário
+      const customAcc = (allAccounts || []).find(a => !a.is_fixed_admin && a.account_name && !a.account_name.toLowerCase().includes('gamefy'));
+      
+      if (customChannelInfo && customChannelInfo.name) {
+        isUserCustomChannel = true;
+        customBrandName = customChannelInfo.name;
+        customCreditsBlock = `━━━━━━━━━━━━━━━━━━━━\n⭐ ${customBrandName}\n` +
+          (customChannelInfo.youtube ? `🔴 YouTube: ${customChannelInfo.youtube}\n` : '') +
+          (customChannelInfo.instagram ? `📸 Instagram: ${customChannelInfo.instagram}\n` : '') +
+          (customChannelInfo.facebook ? `📘 Facebook: ${customChannelInfo.facebook}\n` : '') +
+          `━━━━━━━━━━━━━━━━━━━━`;
+        channelContext = `O usuário cadastrou seu próprio canal: "${customBrandName}". Adapte o tom de voz para a identidade dele.`;
+      } else if (customAcc) {
+        isUserCustomChannel = true;
+        customBrandName = customAcc.account_name.replace('@', '');
+        const ytAcc = connected.find(a => a.platform === 'youtube');
+        const igAcc = connected.find(a => a.platform === 'instagram');
+        const fbAcc = connected.find(a => a.platform === 'facebook');
+
+        customCreditsBlock = `━━━━━━━━━━━━━━━━━━━━\n⭐ ${customBrandName} | Oficial\n` +
+          (ytAcc ? `🔴 YouTube: ${ytAcc.account_name} (${ytAcc.profile_url || ytAcc.profileUrl || ''})\n` : '') +
+          (igAcc ? `📸 Instagram: ${igAcc.account_name} (${igAcc.profile_url || igAcc.profileUrl || ''})\n` : '') +
+          (fbAcc ? `📘 Facebook: ${fbAcc.account_name} (${fbAcc.profile_url || fbAcc.profileUrl || ''})\n` : '') +
+          `━━━━━━━━━━━━━━━━━━━━`;
+        channelContext = `O usuário conectou seu canal próprio: "${customBrandName}". Utilize os créditos e o estilo deste canal.`;
+      }
+    } catch (_) {}
+
+    const promptSystem = `Você é o Estrategista de Redes Sociais e Redator Oficial ${isUserCustomChannel ? `do canal "${customBrandName}"` : 'do canal "GAMEFY" (@gamefyofc)'}.
+Sua missão é pegar o rascunho do usuário, corrigir todos os erros gramaticais e ortográficos e produzir uma postagem/descrição profissional, dinâmica e equilibrada para ${targetPlatforms}.
+${channelContext ? `\nCONTEXTO DO PERFIL DO USUÁRIO:\n${channelContext}` : ''}
 
 DIRETRIZES FUNDAMENTAIS:
 1. ADAPTAÇÃO TOTAL AO JOGO OU TEMA DIGITADO:
-   - Identifique com precisão o tema, jogo ou assunto que o usuário escreveu (pode ser GTA, Minecraft, Free Fire, Call of Duty, Fortnite, FIFA/EA FC, Resident Evil, jogos de luta/artes marciais, simuladores, tutoriais, tecnologia, hardware ou qualquer outro).
-   - Use o vocabulário, termos e gírias REAIS do jogo ou assunto em questão. NUNCA misture jogos diferentes e NUNCA force temas de corrida se o usuário estiver falando de outro tema.
-   - As hashtags geradas DEVEM ser 100% focadas no jogo ou tema digitado pelo usuário.
+   - Identifique com precisão o tema, nicho, jogo ou assunto que o usuário escreveu.
+   - Use o vocabulário, termos e gírias REAIS do jogo ou assunto em questão.
+   - As hashtags geradas DEVEM ser 100% focadas no tema digitado pelo usuário.
 
 2. TEXTO NATURAL E HUMANO (SEM RÓTULOS):
    - NUNCA escreva tags como "[PARTE 1]", "[PARTE 2]", "[INÍCIO]", etc. O texto deve ser contínuo e pronto para publicar.
    - NADA de frases motivacionais de coach ("A verdadeira maestria...", "supere seus limites").
-   - NADA de linguagem robótica ("Esta captura foca na análise de..."). Escreva como quem joga e cria conteúdo autêntico na internet.
+   - Escreva de forma empolgante, autêntica e pronta para prender a atenção.
 
 3. TAMANHO EQUILIBRADO (MÉDIO - NEM LONGO, NEM PEQUENO):
    - Escreva 2 parágrafos curtos e objetivos (cerca de 4 a 6 linhas no total):
      * 1º Parágrafo: Apresenta o momento, a gameplay ou o assunto do vídeo com energia e contexto real.
      * 2º Parágrafo: Destaca um detalhe importante e faz uma pergunta direta e rápida para a comunidade comentar.
 
-4. CRÉDITOS OFICIAIS DO CANAL GAMEFY NO FINAL:
-   - Pule uma linha e adicione o bloco oficial de redes:
-━━━━━━━━━━━━━━━━━━━━
-🎮 GAMEFY | O seu canal gamer oficial!
-🔴 YouTube: @gamefyofc (https://www.youtube.com/@gamefyofc)
-📸 Instagram: @gamefyofc (https://www.instagram.com/gamefyofc)
-📘 Facebook: Gamefy Ofic (https://www.facebook.com/1097087796819080)
-━━━━━━━━━━━━━━━━━━━━
-   - Finalize com 6 a 10 hashtags precisas do jogo ou tema digitado.
+4. CRÉDITOS OFICIAIS DO CANAL NO FINAL:
+   - Pule uma linha e adicione o bloco oficial:
+${customCreditsBlock}
+   - Finalize com 6 a 10 hashtags precisas do tema.
 
 5. TÍTULO LIMPO E ATRATIVO:
-   - Crie um título direto, moderno e empolgante, 100% focado no tema ou jogo do usuário.
+   - Crie um título direto, moderno e empolgante, 100% focado no tema do usuário.
 
-Retorne EXCLUSIVAMENTE um JSON válido:
+6. ANÁLISE DE HORÁRIOS DE PICO PARA ESTE CONTEÚDO (TOP 3):
+   - Analise o tema (ex: se é gamer, tutorial, lifestyle, etc.) e determine os 3 melhores horários de pico para publicação deste post específico, por exemplo ["12:00", "18:30", "21:15"] ou adaptados para o nicho.
+   - Inclua uma justificativa curta para cada horário.
+
+Retorne EXCLUSIVAMENTE um JSON válido com a seguinte estrutura:
 {
-  "title": "Título direto e chamativo para o jogo ou tema digitado",
-  "caption": "Texto completo com a descrição, pergunta, créditos Gamefy e hashtags do jogo",
-  "hashtags": ["#tagDoJogo1", "#tagDoJogo2"]
+  "title": "Título direto e chamativo para o vídeo",
+  "caption": "Texto completo com a descrição, pergunta, créditos do canal e hashtags",
+  "hashtags": ["#tag1", "#tag2"],
+  "peakTimes": [
+    { "time": "12:00", "label": "12:00 - Almoço & Alta Retenção", "reason": "Shorts rápidos e novidades com alto consumo mobile" },
+    { "time": "18:30", "label": "18:30 - Fim de Tarde & Feed", "reason": "Pico de retorno do trabalho/estudos e feed ativo" },
+    { "time": "21:15", "label": "21:15 - Prime Time Noturno", "reason": "Audiência em casa, gameplays completas e engajamento máximo" }
+  ]
 }`;
 
     // 1. TENTATIVA GOOGLE GEMINI (Lê da variável de ambiente GEMINI_API_KEY ou fallback embutido para Render)
@@ -384,12 +427,24 @@ Retorne EXCLUSIVAMENTE um JSON válido:
                 fullCaption = `${fullCaption}\n\n${resolvedHashtags.join(' ')}`;
               }
 
+              const defaultPeaks = [
+                { time: "12:00", label: "12:00 - Almoço & Alta Retenção", reason: "Shorts rápidos e novidades com alto consumo mobile" },
+                { time: "18:30", label: "18:30 - Fim de Tarde & Feed", reason: "Pico de retorno do trabalho/estudos e feed ativo" },
+                { time: "21:15", label: "21:15 - Prime Time Noturno", reason: "Audiência em casa, gameplays completas e engajamento máximo" }
+              ];
+              const resolvedPeaks = Array.isArray(parsed.peakTimes) && parsed.peakTimes.length >= 3 
+                ? parsed.peakTimes 
+                : defaultPeaks;
+
               return res.json({
                 success: true,
                 source: 'gemini',
                 title: resolvedTitle,
                 caption: fullCaption,
-                hashtags: resolvedHashtags
+                hashtags: resolvedHashtags,
+                peakTimes: resolvedPeaks,
+                brandName: customBrandName,
+                isCustomChannel: isUserCustomChannel
               });
             }
           }
@@ -557,16 +612,23 @@ Retorne EXCLUSIVAMENTE um JSON válido:
       enhancedTitle = enhancedTitle.charAt(0).toUpperCase() + enhancedTitle.slice(1);
     }
 
-    // Montar legenda profissional 100% fluida com créditos oficiais Gamefy
-    const gamefyCredits = `━━━━━━━━━━━━━━━━━━━━\n🎮 GAMEFY | O seu canal gamer oficial!\n🔴 YouTube: @gamefyofc (https://www.youtube.com/@gamefyofc)\n📸 Instagram: @gamefyofc (https://www.instagram.com/gamefyofc)\n📘 Facebook: Gamefy Ofic (https://www.facebook.com/1097087796819080)\n━━━━━━━━━━━━━━━━━━━━`;
-    const enhancedCaption = `${correctedDraft}\n\n${cta}\n\n${gamefyCredits}\n\n${baseTags.join(' ')}`;
+    // Montar legenda profissional 100% fluida
+    const finalCredits = isUserCustomChannel ? customCreditsBlock : `━━━━━━━━━━━━━━━━━━━━\n🎮 GAMEFY | O seu canal gamer oficial!\n🔴 YouTube: @gamefyofc (https://www.youtube.com/@gamefyofc)\n📸 Instagram: @gamefyofc (https://www.instagram.com/gamefyofc)\n📘 Facebook: Gamefy Ofic (https://www.facebook.com/1097087796819080)\n━━━━━━━━━━━━━━━━━━━━`;
+    const enhancedCaption = `${correctedDraft}\n\n${cta}\n\n${finalCredits}\n\n${baseTags.join(' ')}`;
 
     return res.json({
       success: true,
       source: 'native_engine',
       title: enhancedTitle,
       caption: enhancedCaption,
-      hashtags: baseTags
+      hashtags: baseTags,
+      peakTimes: [
+        { time: "12:00", label: "12:00 - Almoço & Alta Retenção", reason: "Shorts rápidos e novidades com alto consumo mobile" },
+        { time: "18:30", label: "18:30 - Fim de Tarde & Feed", reason: "Pico de retorno do trabalho/estudos e feed ativo" },
+        { time: "21:15", label: "21:15 - Prime Time Noturno", reason: "Audiência em casa, gameplays completas e engajamento máximo" }
+      ],
+      brandName: customBrandName,
+      isCustomChannel: isUserCustomChannel
     });
   } catch (err) {
     console.error('Erro na melhoria com IA:', err);

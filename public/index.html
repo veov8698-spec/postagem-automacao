@@ -379,12 +379,38 @@
 
                 <!-- Campo de Data/Hora (visível apenas no modo agendado) -->
                 <div class="schedule-picker-box" id="scheduleBox" style="display: none;">
-                  <label for="scheduleDateTime">Data e Horário do Envio</label>
+                  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; flex-wrap: wrap; gap: 0.35rem;">
+                    <label for="scheduleDateTime" style="margin: 0; font-weight: 700; color: #f8fafc; font-size: 0.85rem;">
+                      <i class="fa-solid fa-clock" style="color: #38bdf8;"></i> Horário Recomendado de Pico (IA)
+                    </label>
+                    <span id="lblPeakSyncStatus" style="font-size: 0.72rem; color: #10b981; font-weight: 600;">
+                      <i class="fa-solid fa-bolt"></i> Sincronizado com a Agenda
+                    </span>
+                  </div>
+
+                  <!-- 3 Opções Rápidas de Horários de Pico -->
+                  <div class="quick-peak-chips-container" id="quickPeakChips" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.5rem; margin-bottom: 0.85rem;">
+                    <button type="button" class="peak-chip-btn active" id="btnPeak1" onclick="window.selectComposerPeakTime(0)" style="padding: 0.55rem 0.4rem; background: rgba(59, 130, 246, 0.18); border: 1.5px solid #3b82f6; border-radius: 8px; color: #fff; cursor: pointer; text-align: center; transition: all 0.2s;">
+                      <div style="font-size: 0.72rem; color: #93c5fd; font-weight: 600;" id="peakChipLabel1">☀️ Almoço</div>
+                      <div style="font-size: 1rem; font-weight: 800; color: #60a5fa;" id="peakChipTime1">12:00</div>
+                    </button>
+                    <button type="button" class="peak-chip-btn" id="btnPeak2" onclick="window.selectComposerPeakTime(1)" style="padding: 0.55rem 0.4rem; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 8px; color: #cbd5e1; cursor: pointer; text-align: center; transition: all 0.2s;">
+                      <div style="font-size: 0.72rem; color: #94a3b8; font-weight: 600;" id="peakChipLabel2">🌇 Tarde</div>
+                      <div style="font-size: 1rem; font-weight: 800; color: #cbd5e1;" id="peakChipTime2">18:30</div>
+                    </button>
+                    <button type="button" class="peak-chip-btn" id="btnPeak3" onclick="window.selectComposerPeakTime(2)" style="padding: 0.55rem 0.4rem; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 8px; color: #cbd5e1; cursor: pointer; text-align: center; transition: all 0.2s;">
+                      <div style="font-size: 0.72rem; color: #94a3b8; font-weight: 600;" id="peakChipLabel3">🌙 Prime Time</div>
+                      <div style="font-size: 1rem; font-weight: 800; color: #cbd5e1;" id="peakChipTime3">21:15</div>
+                    </button>
+                  </div>
+
                   <div class="datetime-input-wrapper">
                     <i class="fa-regular fa-clock"></i>
-                    <input type="datetime-local" id="scheduleDateTime" class="input-field">
+                    <input type="datetime-local" id="scheduleDateTime" class="input-field" onchange="window.handleCustomDateTimeChange(this.value)">
                   </div>
-                  <small class="helper-text">O robô em Node.js irá disparar a postagem no horário exato com a visibilidade selecionada.</small>
+                  <small class="helper-text" id="scheduleHelperText">
+                    💡 Dica: Ao escolher um dos 3 horários acima, o calendário e a agenda sincronizam automaticamente!
+                  </small>
                 </div>
               </div>
 
@@ -867,30 +893,30 @@
                 </div>
                 
                 <!-- Pico 1 -->
-                <div class="peak-time-card">
+                <div class="peak-time-card" id="calPeakCard1" style="cursor: pointer;" onclick="window.selectPeakFromCalendar(0)">
                   <div class="peak-time-desc">
-                    <strong>☀️ 1º Pico: 12:00 (Almoço Gamer)</strong>
-                    <span>Maior taxa de cliques em Shorts rápidos e notícias.</span>
+                    <strong id="calPeakTitle1">☀️ 1º Pico: 12:00 (Almoço Gamer)</strong>
+                    <span id="calPeakDesc1">Maior taxa de cliques em Shorts rápidos e notícias.</span>
                   </div>
-                  <span class="peak-time-badge">12:00</span>
+                  <span class="peak-time-badge" id="calPeakBadge1">12:00</span>
                 </div>
 
                 <!-- Pico 2 -->
-                <div class="peak-time-card">
+                <div class="peak-time-card" id="calPeakCard2" style="cursor: pointer;" onclick="window.selectPeakFromCalendar(1)">
                   <div class="peak-time-desc">
-                    <strong>🌇 2º Pico: 18:30 (Fim de Tarde / Volta)</strong>
-                    <span>Maior engajamento no feed do Instagram e YouTube.</span>
+                    <strong id="calPeakTitle2">🌇 2º Pico: 18:30 (Fim de Tarde / Volta)</strong>
+                    <span id="calPeakDesc2">Maior engajamento no feed do Instagram e YouTube.</span>
                   </div>
-                  <span class="peak-time-badge">18:30</span>
+                  <span class="peak-time-badge" id="calPeakBadge2">18:30</span>
                 </div>
 
                 <!-- Pico 3 -->
-                <div class="peak-time-card">
+                <div class="peak-time-card" id="calPeakCard3" style="cursor: pointer;" onclick="window.selectPeakFromCalendar(2)">
                   <div class="peak-time-desc">
-                    <strong>🌙 3º Pico: 21:15 (Prime Time Gamer Noturno)</strong>
-                    <span>Audiência máxima online, gameplays longas e retenção.</span>
+                    <strong id="calPeakTitle3">🌙 3º Pico: 21:15 (Prime Time Noturno)</strong>
+                    <span id="calPeakDesc3">Audiência máxima online, gameplays longas e retenção.</span>
                   </div>
-                  <span class="peak-time-badge">21:15</span>
+                  <span class="peak-time-badge" id="calPeakBadge3">21:15</span>
                 </div>
               </div>
 
