@@ -167,13 +167,15 @@ class PublisherService {
         containerParams.media_type = 'STORIES';
         if (isVideo) {
           containerParams.video_url = resolvedMediaUrl;
-        } else if (resolvedMediaUrl) {
+        } else {
           containerParams.image_url = resolvedMediaUrl;
         }
-      } else if (igFormat === 'reels' || (isVideo && igFormat !== 'feed')) {
+      } else if (isVideo) {
+        // No Instagram Graph API oficial, todas as postagens de vídeo no Feed são criadas como REELS
         containerParams.media_type = 'REELS';
         containerParams.video_url = resolvedMediaUrl;
-      } else if (mediaType === 'image' || resolvedMediaUrl) {
+      } else {
+        // Postagem padrão de imagem (Feed)
         containerParams.image_url = resolvedMediaUrl;
       }
 

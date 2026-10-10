@@ -28,8 +28,10 @@ const upload = multer({
   storage,
   limits: { fileSize: 100 * 1024 * 1024 }, // Limite de 100MB
   fileFilter: (req, file, cb) => {
-    const mime = file.mimetype;
-    if (mime.startsWith('image/') || mime.startsWith('video/')) {
+    const mime = file.mimetype || '';
+    const ext = path.extname(file.originalname || '').toLowerCase();
+    const validExts = ['.jpg', '.jpeg', '.png', '.webp', '.gif', '.heic', '.heif', '.mp4', '.mov', '.avi', '.mkv', '.webm', '.m4v'];
+    if (mime.startsWith('image/') || mime.startsWith('video/') || validExts.includes(ext)) {
       cb(null, true);
     } else {
       cb(new Error('Apenas imagens e vídeos são suportados.'));
@@ -109,7 +111,9 @@ router.post('/', upload.fields([
       if (req.files.media && req.files.media.length > 0) {
         const file = req.files.media[0];
         mediaUrl = `/uploads/${file.filename}`;
-        mediaType = file.mimetype.startsWith('video/') ? 'video' : 'image';
+        const ext = path.extname(file.originalname || '').toLowerCase();
+        const isVideo = (file.mimetype || '').startsWith('video/') || ['.mp4', '.mov', '.avi', '.mkv', '.webm', '.m4v'].includes(ext);
+        mediaType = isVideo ? 'video' : 'image';
       }
       if (req.files.thumbnail && req.files.thumbnail.length > 0) {
         const thumbFile = req.files.thumbnail[0];
