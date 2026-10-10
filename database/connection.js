@@ -187,21 +187,26 @@ async function initDB() {
   } catch (error) {
     isConnected = false;
     lastError = error.message;
-    console.warn(`⚠️ [MySQL] Não foi possível conectar ao MySQL (${error.code || error.message}).`);
-    console.warn(`💡 O aplicativo continuará funcionando com armazenamento local resiliente até que o MySQL seja iniciado.`);
+    if (!warnedMysqlFallback) {
+      console.warn(`⚠️ [MySQL] Não foi possível conectar ao MySQL (${error.code || error.message}).`);
+      console.warn(`💡 O aplicativo continuará funcionando com armazenamento local resiliente.`);
+      warnedMysqlFallback = true;
+    }
     // Assegura conta Root no storage local também
     try { await db.ensureDefaultRoot(); } catch (_) {}
   }
 }
 
+let warnedMysqlFallback = false;
+
 // Tentar reconectar periodicamente se o MySQL cair ou for iniciado depois
 setInterval(async () => {
-  if (!isConnected) {
+  if (!isConnected && process.env.NODE_ENV !== 'production') {
     try {
       await initDB();
     } catch (_) {}
   }
-}, 15000);
+}, 30000);
 
 // Utilitários de acesso a dados abstraídos para suportar MySQL e fallback transparente
 const db = {
