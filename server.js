@@ -28,7 +28,16 @@ app.use((req, res, next) => {
   // Sincronização dinâmica de URL pública do Túnel Cloudflare para download de mídias pela Meta/Instagram
   const host = req.headers['x-forwarded-host'] || req.headers.host;
   const proto = req.headers['x-forwarded-proto'] || (req.secure ? 'https' : 'http');
-  if (host && !host.includes('localhost') && !host.includes('127.0.0.1')) {
+  const cleanHost = (host || '').split(':')[0].toLowerCase();
+  const isPrivateIp = !cleanHost || 
+                      cleanHost === 'localhost' || 
+                      cleanHost === '127.0.0.1' || 
+                      cleanHost.startsWith('192.168.') || 
+                      cleanHost.startsWith('10.') || 
+                      cleanHost.startsWith('169.254.') || 
+                      /^172\.(1[6-9]|2[0-9]|3[0-1])\./.test(cleanHost);
+
+  if (host && !isPrivateIp) {
     const activeUrl = `${proto}://${host}`;
     if (process.env.PUBLIC_APP_URL !== activeUrl) {
       process.env.PUBLIC_APP_URL = activeUrl;

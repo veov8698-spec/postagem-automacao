@@ -134,11 +134,22 @@ class PublisherService {
       let resolvedMediaUrl = mediaUrl;
       const isLocalPath = mediaUrl && (mediaUrl.startsWith('/uploads') || mediaUrl.startsWith('uploads'));
 
-      if (isLocalPath) {
-        const publicAppUrl = post.currentOrigin || post.requestOrigin || process.env.PUBLIC_APP_URL || process.env.APP_URL || 'http://localhost:3000';
+        const isPrivate = (u) => {
+          if (!u) return true;
+          const c = u.replace(/^https?:\/\//i, '').split('/')[0].split(':')[0].toLowerCase();
+          return c === 'localhost' || c === '127.0.0.1' || c.startsWith('192.168.') || c.startsWith('10.') || /^172\.(1[6-9]|2[0-9]|3[0-1])\./.test(c);
+        };
+
+        let publicAppUrl = post.currentOrigin;
+        if (!publicAppUrl || isPrivate(publicAppUrl)) {
+          publicAppUrl = process.env.PUBLIC_APP_URL;
+        }
+        if (!publicAppUrl || isPrivate(publicAppUrl)) {
+          publicAppUrl = post.requestOrigin || 'https://technique-expired-php-spa.trycloudflare.com';
+        }
+
         resolvedMediaUrl = `${publicAppUrl.replace(/\/+$/, '')}/${mediaUrl.replace(/^\/+/, '')}`;
         console.log(`[Instagram] URL pública resolvida para a Meta baixar a mídia: ${resolvedMediaUrl}`);
-      }
 
       const isVideo = mediaType === 'video';
 

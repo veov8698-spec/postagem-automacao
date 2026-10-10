@@ -156,10 +156,19 @@ router.post('/', upload.fields([
       platforms
     });
 
-    // Detecta origem da requisição (Cloudflare Tunnel atual ou localhost)
+    // Detecta origem da requisição pública (Cloudflare Tunnel atual)
     const host = req.headers['x-forwarded-host'] || req.get('host');
     const proto = req.headers['x-forwarded-proto'] || (req.secure ? 'https' : 'http');
-    post.currentOrigin = (host && !host.includes('localhost') && !host.includes('127.0.0.1')) ? `${proto}://${host}` : (process.env.PUBLIC_APP_URL || `${proto}://${host}`);
+    const cleanHost = (host || '').split(':')[0].toLowerCase();
+    const isPrivateIp = !cleanHost || 
+                        cleanHost === 'localhost' || 
+                        cleanHost === '127.0.0.1' || 
+                        cleanHost.startsWith('192.168.') || 
+                        cleanHost.startsWith('10.') || 
+                        cleanHost.startsWith('169.254.') || 
+                        /^172\.(1[6-9]|2[0-9]|3[0-1])\./.test(cleanHost);
+
+    post.currentOrigin = (!isPrivateIp && host) ? `${proto}://${host}` : process.env.PUBLIC_APP_URL;
 
     post.privacy = req.body.privacy || 'public';
     post.ytFormat = req.body.ytFormat;
