@@ -1,29 +1,16 @@
 services:
   - type: web
-    name: postagem-automacao
-    env: node
+    name: social-publisher
+    runtime: node
     plan: free
     buildCommand: npm install
     startCommand: node server.js
-    healthCheckPath: /api/system/status
+    healthCheckPath: /
+    autoDeploy: true
     envVars:
       - key: PORT
-        value: 3000
+        value: 10000
+      - key: NODE_ENV
+        value: production
       - key: SIMULATE_API_PUBLISH
-        value: false
-      - key: JWT_SECRET
-        generateValue: true
-      - key: ROOT_EMAIL
-        value: admin@gamefy.com
-      - key: ROOT_PASSWORD
-        value: GamefyAdmin2026!
-      - key: IG_USER_ID
-        value: "17841439279415952"
-      - key: FB_PAGE_ID
-        value: "1097087796819080"
-      - key: FB_PAGE_TOKEN
-        sync: false
-      - key: IG_PAGE_TOKEN
-        sync: false
-      - key: META_ACCESS_TOKEN
-        sync: false
+        value: "false"
