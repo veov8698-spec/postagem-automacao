@@ -3355,6 +3355,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const btn = document.getElementById(`slotBtn${i}`);
       const lbl = document.getElementById(`slotLabel${i}`);
       const icon = document.getElementById(`slotIcon${i}`);
+      const removeBtn = document.getElementById(`slotRemoveBtn${i}`);
       const s = videoSlots[i];
 
       if (!btn) continue;
@@ -3365,10 +3366,12 @@ document.addEventListener('DOMContentLoaded', () => {
         const shortTitle = s.title ? (s.title.length > 12 ? s.title.substring(0, 10) + '...' : s.title) : `Vídeo ${i + 1}`;
         if (lbl) lbl.textContent = shortTitle;
         if (icon) icon.innerHTML = '<i class="fa-solid fa-circle-check" style="color: #10b981;"></i>';
+        if (removeBtn) removeBtn.style.display = 'flex';
       } else {
         btn.classList.remove('configured');
         if (lbl) lbl.textContent = (currentSlot === i) ? `Vídeo ${i + 1}` : `+ Vídeo ${i + 1}`;
         if (icon) icon.innerHTML = (currentSlot === i) ? '<i class="fa-solid fa-pen"></i>' : '<i class="fa-solid fa-plus"></i>';
+        if (removeBtn) removeBtn.style.display = 'none';
       }
     }
 
@@ -3387,6 +3390,186 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     }
   }
+
+  window.clearVideoSlot = function(event, index) {
+    if (event) {
+      event.preventDefault();
+      event.stopPropagation();
+    }
+
+    const s = videoSlots[index];
+    if (!s) return;
+
+    if (!confirm(`Deseja remover e limpar o Vídeo ${index + 1} da fila de edição?`)) return;
+
+    videoSlots[index] = {
+      id: index,
+      title: '',
+      caption: '',
+      file: null,
+      fileUrl: null,
+      thumbFile: null,
+      thumbUrl: null,
+      platforms: ['instagram', 'facebook', 'youtube'],
+      isScheduled: false,
+      scheduledAt: '',
+      igFormat: 'auto',
+      fbFormat: 'auto',
+      ytFormat: 'auto',
+      privacy: 'public',
+      isConfigured: false
+    };
+
+    if (currentSlot === index) {
+      loadSlotIntoForm(index);
+    }
+
+    updateSlotsUI();
+    if (typeof renderQueuePreviewCards === 'function') {
+      renderQueuePreviewCards();
+    }
+
+    showToast(`🗑️ Vídeo ${index + 1} foi removido da fila com sucesso!`, 'info');
+  };
+
+  window.clearAllQueueSlots = function() {
+    if (!confirm('Deseja limpar todos os 3 vídeos da fila de edição?')) return;
+
+    for (let i = 0; i < 3; i++) {
+      videoSlots[i] = {
+        id: i,
+        title: '',
+        caption: '',
+        file: null,
+        fileUrl: null,
+        thumbFile: null,
+        thumbUrl: null,
+        platforms: ['instagram', 'facebook', 'youtube'],
+        isScheduled: false,
+        scheduledAt: '',
+        igFormat: 'auto',
+        fbFormat: 'auto',
+        ytFormat: 'auto',
+        privacy: 'public',
+        isConfigured: false
+      };
+    }
+
+    currentSlot = 0;
+    loadSlotIntoForm(0);
+    updateSlotsUI();
+    window.closeQueuePreviewModal();
+    showToast('🧹 Fila de vídeos limpa com sucesso.', 'info');
+  };
+
+  window.openQueuePreviewModal = function() {
+    saveCurrentSlotState();
+    const modal = document.getElementById('queuePreviewModal');
+    if (modal) {
+      modal.style.display = 'flex';
+      renderQueuePreviewCards();
+    }
+  };
+
+  window.closeQueuePreviewModal = function() {
+    const modal = document.getElementById('queuePreviewModal');
+    if (modal) modal.style.display = 'none';
+  };
+
+  window.submitFromQueueModal = function() {
+    window.closeQueuePreviewModal();
+    const btn = document.getElementById('btnSubmitPost');
+    if (btn) btn.click();
+  };
+
+  function renderQueuePreviewCards() {
+    const container = document.getElementById('queuePreviewCardsContainer');
+    if (!container) return;
+
+    container.innerHTML = '';
+
+    videoSlots.forEach((slot, i) => {
+      const isCur = currentSlot === i;
+      const isConfig = slot.isConfigured || !!(slot.caption?.trim() || slot.file);
+      const card = document.createElement('div');
+      card.className = 'card';
+      card.style.cssText = `padding: 1rem; border-radius: 12px; background: rgba(30, 41, 59, 0.7); border: 1.5px solid ${isCur ? '#3b82f6' : (isConfig ? 'rgba(16, 185, 129, 0.4)' : 'rgba(255, 255, 255, 0.08)')}; display: flex; flex-direction: column; justify-content: space-between;`;
+
+      let mediaThumbHtml = '';
+      if (slot.file && slot.file.type.startsWith('video/')) {
+        mediaThumbHtml = `
+          <div style="position: relative; width: 100%; height: 120px; border-radius: 8px; overflow: hidden; background: #000; margin-bottom: 0.75rem;">
+            <video src="${slot.fileUrl || (slot.file ? URL.createObjectURL(slot.file) : '')}" style="width: 100%; height: 100%; object-fit: cover;" muted></video>
+            <span style="position: absolute; bottom: 6px; right: 6px; background: rgba(0,0,0,0.7); color: #fff; font-size: 0.68rem; padding: 2px 6px; border-radius: 4px;">
+              <i class="fa-solid fa-video"></i> Vídeo
+            </span>
+          </div>
+        `;
+      } else if (slot.file) {
+        mediaThumbHtml = `
+          <div style="width: 100%; height: 120px; border-radius: 8px; overflow: hidden; background: #000; margin-bottom: 0.75rem;">
+            <img src="${slot.fileUrl || (slot.file ? URL.createObjectURL(slot.file) : '')}" style="width: 100%; height: 100%; object-fit: cover;" alt="Prévia">
+          </div>
+        `;
+      } else {
+        mediaThumbHtml = `
+          <div style="width: 100%; height: 90px; border-radius: 8px; background: rgba(255,255,255,0.03); border: 1px dashed rgba(255,255,255,0.15); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; color: #64748b; font-size: 0.75rem; margin-bottom: 0.75rem;">
+            <i class="fa-solid fa-cloud-arrow-up" style="font-size: 1.25rem;"></i>
+            <span>Sem vídeo anexado</span>
+          </div>
+        `;
+      }
+
+      const displayTitle = slot.title ? escapeHtml(slot.title) : `<em style="color:#64748b;">Sem título</em>`;
+      const displayCaption = slot.caption ? escapeHtml(slot.caption.substring(0, 110)) + (slot.caption.length > 110 ? '...' : '') : `<em style="color:#64748b;">Sem legenda</em>`;
+      const dateDisplay = slot.isScheduled && slot.scheduledAt ? `<span style="color: #60a5fa;"><i class="fa-regular fa-clock"></i> ${slot.scheduledAt.replace('T', ' ')}</span>` : `<span style="color: #10b981;"><i class="fa-solid fa-bolt"></i> Imediato</span>`;
+
+      card.innerHTML = `
+        <div>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.65rem;">
+            <span style="font-size: 0.82rem; font-weight: 800; color: #f8fafc; display: flex; align-items: center; gap: 6px;">
+              <span style="width: 20px; height: 20px; border-radius: 50%; background: ${isCur ? '#3b82f6' : '#1e293b'}; border: 1px solid rgba(255,255,255,0.2); display: inline-flex; align-items: center; justify-content: center; font-size: 0.72rem;">${i + 1}</span>
+              Vídeo ${i + 1} ${isCur ? '<span style="font-size: 0.7rem; color: #60a5fa;">(Ativo)</span>' : ''}
+            </span>
+            <span style="font-size: 0.72rem; padding: 2px 7px; border-radius: 4px; font-weight: 700; background: ${isConfig ? 'rgba(16, 185, 129, 0.2)' : 'rgba(255,255,255,0.06)'}; color: ${isConfig ? '#34d399' : '#94a3b8'};">
+              ${isConfig ? '✓ Configurado' : 'Vazio'}
+            </span>
+          </div>
+
+          ${mediaThumbHtml}
+
+          <div style="margin-bottom: 0.5rem;">
+            <strong style="color: #fff; font-size: 0.88rem; display: block; margin-bottom: 3px;">${displayTitle}</strong>
+            <p style="color: #94a3b8; font-size: 0.78rem; margin: 0; line-height: 1.35;">${displayCaption}</p>
+          </div>
+
+          <div style="font-size: 0.72rem; margin-bottom: 0.75rem; display: flex; justify-content: space-between; align-items: center; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 0.5rem;">
+            <span>Momento: ${dateDisplay}</span>
+            <span style="color: #cbd5e1;">Redes: ${(slot.platforms || []).join(', ')}</span>
+          </div>
+        </div>
+
+        <div style="display: flex; gap: 0.4rem; justify-content: flex-end; margin-top: 0.5rem;">
+          <button type="button" class="btn-card-action" onclick="window.editSlotFromPreview(${i})" style="flex: 1; padding: 0.4rem 0.6rem; font-size: 0.75rem; justify-content: center; background: rgba(59, 130, 246, 0.15); border-color: rgba(59, 130, 246, 0.35); color: #60a5fa; font-weight: 700;">
+            <i class="fa-solid fa-pen"></i> Editar
+          </button>
+          ${isConfig ? `
+            <button type="button" class="btn-card-action" onclick="window.clearVideoSlot(event, ${i})" style="padding: 0.4rem 0.65rem; font-size: 0.75rem; background: rgba(239, 68, 68, 0.15); border-color: rgba(239, 68, 68, 0.35); color: #f87171;" title="Remover este vídeo">
+              <i class="fa-solid fa-trash-can"></i>
+            </button>
+          ` : ''}
+        </div>
+      `;
+
+      container.appendChild(card);
+    });
+  }
+
+  window.editSlotFromPreview = function(index) {
+    window.closeQueuePreviewModal();
+    window.selectVideoSlot(index);
+    window.switchView('composer-view');
+  };
 
   window.setMultiVideoMode = function(mode) {
     videoMode = mode;
