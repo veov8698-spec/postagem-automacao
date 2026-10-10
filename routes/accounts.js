@@ -33,7 +33,7 @@ const DEFAULT_GAMEFY_ACCOUNTS = {
     account_id: process.env.IG_USER_ID || '17841439279415952',
     access_token: process.env.IG_PAGE_TOKEN || process.env.META_ACCESS_TOKEN || '',
     avatar_url: 'https://scontent.fcgh59-1.fna.fbcdn.net/v/t51.82787-15/683196024_18077371340309314_3410770056813063639_n.jpg?_nc_cat=107&_nc_map=urlgen_bucketless&ccb=1-7&_nc_sid=7d201b&_nc_eui2=AeH_4xIAlRsMmwa0FKuJZihg6GK13YcRK67oYrXdhxErrhRnyoJ6MvhwvnQOVPXgUxmjrdteWoxxQUNUapqLDaYq&_nc_ohc=0qmOqHs1ZYkQ7kNvwE76vUU&_nc_oc=AdoR20nszrkX90vEEu-07IdHxnmZ70_b4jtmSA7NjsC91pJp-QXI9TY3yYKI2IxLXXFOTQlJGmp8jtcWWZuGzOqY&_nc_zt=23&_nc_ht=scontent.fcgh59-1.fna&edm=AJdBtusEAAAA&_nc_gid=S7DC0kBNDIwual7yJ_Y_-w&oh=00_AQM1LC7n88SDBNMs2RNbG1YPBMUDO1Bu8AOJJhYrSRHZgA&oe=6ACEBCAF',
-    is_connected: true,
+    is_connected: !!(process.env.IG_PAGE_TOKEN || process.env.META_ACCESS_TOKEN),
     extra_info: JSON.stringify({ followers: 'Perfil Oficial Conectado', postsCount: 'Publicação Automática Ativa' })
   },
   facebook: {
@@ -42,7 +42,7 @@ const DEFAULT_GAMEFY_ACCOUNTS = {
     account_id: process.env.FB_PAGE_ID || '1097087796819080',
     access_token: process.env.FB_PAGE_TOKEN || process.env.META_ACCESS_TOKEN || '',
     avatar_url: 'https://scontent.fcgh59-1.fna.fbcdn.net/v/t39.30808-1/682775486_122104758596641715_3150330948983276192_n.jpg?stp=cp0_dst-jpg_s50x50_tt6&_nc_cat=111&_nc_map=urlgen_bucketless&ccb=1-7&_nc_sid=f907e8&_nc_eui2=AeEhH6Krag0QqOJiB2CPmJYU-ZPRH1RN01L5k9EfVE3TUuZIObvyQHp-mXcgZBXsj9w2CYpb_oNC3vnMUHu0qMHp&_nc_ohc=1qyqoKK2ejAQ7kNvwFrz_SF&_nc_oc=AdrA1jC8Uj9B-gmHlyWIp8R6CAlf1ntwrqD0uo1IElB3mGA-bkL6kZtZxfxPqYD2B60yNxjK3TM6T6nWjgbPMFaC&_nc_zt=24&_nc_ht=scontent.fcgh59-1.fna&edm=AJdBtusEAAAA&_nc_gid=DQxxe95Iax3xhpPDLt_FEg&_nc_tpa=Q5bMBQL6cTWdvcRrwBOIJ2MjlrlFR_-bdu5dQ3m5Zf848Jtp0xhWhEKw99ZbjRaXwuxVssndXDg2k_dAWQ&oh=00_AQNL8j1fhhE6lqcj7TMi3lJxKqhL0MVL8Jrtw8Jwo5DCog&oe=6ACEC06A',
-    is_connected: true,
+    is_connected: !!(process.env.FB_PAGE_TOKEN || process.env.META_ACCESS_TOKEN),
     extra_info: JSON.stringify({ followers: '9 seguidores', postsCount: 'Página Oficial Conectada (Automação Ativa)' })
   },
   youtube: {
@@ -51,7 +51,7 @@ const DEFAULT_GAMEFY_ACCOUNTS = {
     account_id: 'UC8rm4-cdDaD1DKodJdoT5ow',
     access_token: process.env.YOUTUBE_ACCESS_TOKEN || '',
     avatar_url: 'https://yt3.ggpht.com/bGeOORQ_aAU1jsCtvt2tV5qa_AxPhc2zHnZlspFYM7Ya9FBgNp_RTN75Yh-Cuxo3zQ3jqvViVQ=s800-c-k-c0x00ffffff-no-rj',
-    is_connected: true,
+    is_connected: !!(process.env.YOUTUBE_ACCESS_TOKEN || process.env.YOUTUBE_REFRESH_TOKEN),
     extra_info: JSON.stringify({ followers: '72 inscritos', postsCount: '76 vídeos' })
   }
 };

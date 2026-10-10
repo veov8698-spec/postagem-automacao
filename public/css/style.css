@@ -3270,10 +3270,21 @@ body {
   display: flex;
   flex-direction: column;
   gap: 0.6rem;
-  z-index: 9999;
+  z-index: 99999;
+  pointer-events: none;
+}
+
+@media (max-width: 768px) {
+  .toast-container {
+    bottom: 1.25rem;
+    left: 1rem;
+    right: 1rem;
+    align-items: stretch;
+  }
 }
 
 .toast {
+  pointer-events: auto;
   background-color: var(--bg-surface);
   color: var(--text-primary);
   border: 1px solid var(--border-color);
