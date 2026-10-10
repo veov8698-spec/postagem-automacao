@@ -146,12 +146,19 @@ router.get('/', async (req, res) => {
         }
       }
 
+      const isFixedAdmin = ['instagram', 'facebook', 'youtube'].includes(acc.platform) || 
+        ['instagram', 'facebook', 'youtube', 'default_instagram', 'default_facebook', 'default_youtube'].includes(acc.id) || 
+        !!acc.is_fixed_admin || 
+        (acc.account_name && (acc.account_name.toLowerCase().includes('gamefy') || acc.account_name.toLowerCase().includes('ofc') || acc.account_name.toLowerCase().includes('oficial')));
+
       return {
         ...acc,
         id: acc.id || acc.platform,
+        is_fixed_admin: isFixedAdmin,
+        fixedAdminLabel: isFixedAdmin ? '👑 Conta Oficial Gamefy (Fixa no Administrador)' : null,
         recentPosts,
         profileUrl,
-        isExtraChannel: !['instagram', 'facebook', 'youtube', 'default_instagram', 'default_facebook', 'default_youtube'].includes(acc.id),
+        isExtraChannel: !isFixedAdmin,
         followersCount: parsedInfo.followers || (acc.platform === 'youtube' ? 'Canal YouTube' : (acc.platform === 'facebook' ? 'Página Oficial' : 'Perfil Conectado')),
         postsCount: parsedInfo.postsCount || (acc.platform === 'youtube' ? 'Vídeos Ativos' : 'Publicações no Feed')
       };

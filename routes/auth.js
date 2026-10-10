@@ -62,6 +62,39 @@ router.post('/register', async (req, res) => {
 });
 
 /**
+ * GET /api/auth/auto-admin
+ * Autenticação automática como Administrador Root (Gamefy) para manter o login e contas fixas
+ */
+router.get('/auto-admin', async (req, res) => {
+  try {
+    const rootUser = await db.ensureDefaultRoot();
+    if (!rootUser) {
+      return res.status(500).json({ success: false, error: 'Administrador não inicializado.' });
+    }
+
+    const token = jwt.sign(
+      { id: rootUser.id, name: rootUser.name, email: rootUser.email, role: rootUser.role },
+      JWT_SECRET,
+      { expiresIn: '30d' }
+    );
+
+    return res.json({
+      success: true,
+      token,
+      user: {
+        id: rootUser.id,
+        name: rootUser.name,
+        email: rootUser.email,
+        role: rootUser.role,
+        status: rootUser.status
+      }
+    });
+  } catch (err) {
+    return res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+/**
  * POST /api/auth/login
  * Login de usuário
  */

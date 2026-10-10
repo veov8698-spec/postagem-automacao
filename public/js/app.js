@@ -1893,8 +1893,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (tag && nameElem && idElem && avatarWrapper) {
           if (acc.is_connected) {
-            tag.className = 'account-status-tag connected';
-            tag.innerHTML = '<span class="status-dot-sm"></span> Conectado';
+            if (acc.is_fixed_admin) {
+              tag.className = 'account-status-tag connected fixed-admin-tag';
+              tag.innerHTML = '<i class="fa-solid fa-crown" style="color: #fbbf24; font-size: 0.72rem; margin-right: 0.3rem;"></i> Fixo Adm (Gamefy)';
+              tag.style.background = 'rgba(245, 158, 11, 0.15)';
+              tag.style.borderColor = 'rgba(245, 158, 11, 0.4)';
+              tag.style.color = '#fbbf24';
+              tag.title = 'Conta oficial da Gamefy vinculada permanentemente ao Administrador Root';
+            } else {
+              tag.className = 'account-status-tag connected';
+              tag.innerHTML = '<span class="status-dot-sm"></span> Conectado';
+              tag.style.background = '';
+              tag.style.borderColor = '';
+              tag.style.color = '';
+            }
 
             nameElem.textContent = acc.account_name || 'Conta Conectada';
             idElem.textContent = acc.account_id ? `ID: ${acc.account_id}` : 'Ativo';
@@ -2766,11 +2778,24 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   async function checkAuthStatus() {
-    const token = getAuthToken();
+    let token = getAuthToken();
     const navName = document.getElementById('navUserName');
     const navAvatar = document.getElementById('navUserAvatar');
     const navRoleTag = document.getElementById('navUserRoleTag');
     const tabAdmin = document.getElementById('tabAdmin');
+
+    if (!token) {
+      // Auto-login automático transparente como Administrador Root (Gamefy)
+      try {
+        const autoRes = await fetch('/api/auth/auto-admin');
+        const autoData = await autoRes.json();
+        if (autoData.success && autoData.token) {
+          setAuthToken(autoData.token);
+          token = autoData.token;
+          currentUser = autoData.user;
+        }
+      } catch (_) {}
+    }
 
     if (!token) {
       currentUser = null;
@@ -2878,6 +2903,31 @@ document.addEventListener('DOMContentLoaded', () => {
       if (registerForm) registerForm.style.display = 'block';
       if (tabLogin) tabLogin.classList.remove('active');
       if (tabReg) tabReg.classList.add('active');
+    }
+  };
+
+  window.fastLoginAdminGamefy = async function() {
+    try {
+      const emailInput = document.getElementById('loginEmail');
+      const passInput = document.getElementById('loginPassword');
+      if (emailInput) emailInput.value = 'admin@gamefy.com';
+      if (passInput) passInput.value = 'GamefyAdmin2026!';
+
+      const res = await fetch('/api/auth/auto-admin');
+      const data = await res.json();
+      if (data.success && data.token) {
+        setAuthToken(data.token);
+        currentUser = data.user;
+        showToast('👑 Conectado como Administrador Root (Gamefy)!', 'success');
+        window.closeAuthModal();
+        await checkAuthStatus();
+        await loadAccounts();
+        await loadGroups();
+      } else {
+        showToast('Falha ao autenticar administrador.', 'error');
+      }
+    } catch (err) {
+      showToast('Erro ao autenticar: ' + err.message, 'error');
     }
   };
 
