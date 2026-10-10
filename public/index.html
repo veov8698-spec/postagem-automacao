@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>SocialPublisher - Instagram, Facebook & YouTube</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -15,57 +15,64 @@
   <div class="app-container">
     <!-- Barra Superior -->
     <header class="top-nav">
-      <div class="brand">
-        <div class="brand-icon">
-          <i class="fa-solid fa-share-nodes"></i>
-        </div>
-        <div class="brand-text">
-          <h1>SocialPublisher</h1>
-          <span class="sub">Hub Unificado de Publicação</span>
-        </div>
-      </div>
-
-      <!-- Abas de Navegação -->
-      <nav class="nav-tabs">
-        <button class="nav-tab active" data-view="composer-view" id="tabComposer">
-          <i class="fa-solid fa-feather"></i>
-          <span>Nova Postagem</span>
-        </button>
-        <button class="nav-tab" data-view="groups-view" id="tabGroups">
-          <i class="fa-solid fa-layer-group"></i>
-          <span>Grupos de Redes</span>
-          <span class="badge-count" id="totalGroupsBadge">0</span>
-        </button>
-        <button class="nav-tab" data-view="gallery-view" id="tabGallery">
-          <i class="fa-solid fa-images"></i>
-          <span>Galeria Salva</span>
-          <span class="badge-count" id="totalPostsBadge">0</span>
-        </button>
-        <button class="nav-tab" data-view="accounts-view" id="tabAccounts">
-          <i class="fa-solid fa-link"></i>
-          <span>Contas Conectadas</span>
-          <span class="badge-count accounts-badge" id="activeAccountsBadge">0/3</span>
-        </button>
-        <button class="nav-tab" data-view="admin-view" id="tabAdmin" style="display: none;">
-          <i class="fa-solid fa-user-shield"></i>
-          <span>Painel Admin</span>
-        </button>
-      </nav>
-
-      <!-- Área de Usuário & Status -->
-      <div class="user-auth-nav">
-        <!-- Indicador de Status do MySQL -->
-        <div class="system-status" id="dbStatusIndicator" title="Verificando banco de dados...">
-          <span class="status-dot online"></span>
-          <span class="status-text" id="dbStatusText">MySQL Conectado</span>
+      <div class="top-nav-inner">
+        <div class="brand">
+          <div class="brand-icon">
+            <i class="fa-solid fa-share-nodes"></i>
+          </div>
+          <div class="brand-text">
+            <h1>SocialPublisher</h1>
+            <span class="sub">Hub Unificado de Publicação</span>
+          </div>
         </div>
 
-        <!-- Botão/Perfil de Usuário -->
-        <button class="user-pill-btn" id="btnUserAuthProfile" onclick="window.handleUserAuthClick()">
-          <span class="user-avatar-sm" id="navUserAvatar">R</span>
-          <span id="navUserName">Entrar</span>
-          <span class="role-badge-tag root" id="navUserRoleTag" style="display: none;">ROOT</span>
-        </button>
+        <!-- Abas de Navegação -->
+        <nav class="nav-tabs">
+          <button class="nav-tab active" data-view="composer-view" id="tabComposer">
+            <i class="fa-solid fa-feather"></i>
+            <span>Nova Postagem</span>
+          </button>
+          <button class="nav-tab" data-view="groups-view" id="tabGroups">
+            <i class="fa-solid fa-layer-group"></i>
+            <span>Grupos de Redes</span>
+            <span class="badge-count" id="totalGroupsBadge">0</span>
+          </button>
+          <button class="nav-tab" data-view="gallery-view" id="tabGallery">
+            <i class="fa-solid fa-images"></i>
+            <span>Galeria Salva</span>
+            <span class="badge-count" id="totalPostsBadge">0</span>
+          </button>
+          <button class="nav-tab" data-view="schedule-view" id="tabSchedule">
+            <i class="fa-solid fa-calendar-days"></i>
+            <span>Agenda & Picos</span>
+            <span class="badge-count" id="totalScheduledBadge">0</span>
+          </button>
+          <button class="nav-tab" data-view="accounts-view" id="tabAccounts">
+            <i class="fa-solid fa-link"></i>
+            <span>Contas Conectadas</span>
+            <span class="badge-count accounts-badge" id="activeAccountsBadge">0/3</span>
+          </button>
+          <button class="nav-tab" data-view="admin-view" id="tabAdmin" style="display: none;">
+            <i class="fa-solid fa-user-shield"></i>
+            <span>Painel Admin</span>
+          </button>
+        </nav>
+
+        <!-- Área de Usuário & Status -->
+        <div class="user-auth-nav">
+          <!-- Indicador de Status do MySQL -->
+          <div class="system-status" id="dbStatusIndicator" title="Verificando banco de dados...">
+            <span class="status-dot online"></span>
+            <span class="status-text" id="dbStatusText">MySQL Conectado</span>
+          </div>
+
+          <!-- Botão/Perfil de Usuário -->
+          <button class="user-pill-btn" id="btnUserAuthProfile" onclick="window.handleUserAuthClick()">
+            <span class="user-avatar-sm" id="navUserAvatar">R</span>
+            <span id="navUserName">Entrar</span>
+            <span class="role-badge-tag root" id="navUserRoleTag" style="display: none;">ROOT</span>
+          </button>
+        </div>
       </div>
     </header>
 
@@ -89,11 +96,42 @@
               <div class="composer-connected-banner">
                 <span class="net-item"><span class="dot-online"></span> Instagram: <strong>@gamefyofc</strong></span>
                 <span class="net-item"><span class="dot-online"></span> Facebook: <strong>Gamefy Ofic</strong></span>
-                <span class="net-item"><span class="dot-online"></span> YouTube: <strong>GAMEFY_OFICIAL</strong></span>
+                <span class="net-item"><span class="dot-online"></span> YouTube: <strong>@gamefyofc</strong></span>
               </div>
             </div>
 
             <form id="postForm" class="post-form">
+              <!-- Fila de Multi-Vídeos (Até 3 Vídeos) -->
+              <div class="multi-video-bar">
+                <div class="multi-video-header">
+                  <div class="multi-video-title">
+                    <i class="fa-solid fa-layer-group" style="color: #38bdf8;"></i>
+                    <span>Fila de Edição: <strong id="multiVideoStatusText" style="color: #60a5fa;">Vídeo 1 (Ativo)</strong></span>
+                  </div>
+                  <div class="multi-video-mode-toggle">
+                    <span class="multi-video-pill active" id="pillSingleMode" onclick="window.setMultiVideoMode('single')">1 Vídeo</span>
+                    <span class="multi-video-pill" id="pillBatchMode" onclick="window.setMultiVideoMode('batch')">Lote (Até 3)</span>
+                  </div>
+                </div>
+                <div class="multi-video-slots" id="multiVideoSlotsContainer">
+                  <button type="button" class="video-slot-btn active" id="slotBtn0" onclick="window.selectVideoSlot(0)">
+                    <span class="slot-num">1</span>
+                    <span class="slot-label" id="slotLabel0">Vídeo 1</span>
+                    <span class="slot-status-icon" id="slotIcon0"><i class="fa-solid fa-pen"></i></span>
+                  </button>
+                  <button type="button" class="video-slot-btn" id="slotBtn1" onclick="window.selectVideoSlot(1)">
+                    <span class="slot-num">2</span>
+                    <span class="slot-label" id="slotLabel1">+ Vídeo 2</span>
+                    <span class="slot-status-icon" id="slotIcon1"><i class="fa-solid fa-plus"></i></span>
+                  </button>
+                  <button type="button" class="video-slot-btn" id="slotBtn2" onclick="window.selectVideoSlot(2)">
+                    <span class="slot-num">3</span>
+                    <span class="slot-label" id="slotLabel2">+ Vídeo 3</span>
+                    <span class="slot-status-icon" id="slotIcon2"><i class="fa-solid fa-plus"></i></span>
+                  </button>
+                </div>
+              </div>
+
               <!-- Seletor Rápido de Grupo de Publicação -->
               <div class="group-selector-box">
                 <div class="group-selector-header">
@@ -277,16 +315,52 @@
               <div class="form-group">
                 <div class="label-with-counter">
                   <label for="postCaption" class="section-label">Legenda / Descrição *</label>
-                  <span class="char-counter" id="charCounter">0 caracteres</span>
+                  <div class="caption-header-actions">
+                    <button type="button" class="btn-ai-magic" id="btnAiEnhance" title="Corrigir erros, reescrever e gerar hashtags com I.A">
+                      <i class="fa-solid fa-wand-magic-sparkles"></i>
+                      <span>Melhorar com I.A (Gemini)</span>
+                    </button>
+                    <span class="char-counter" id="charCounter">0 caracteres</span>
+                  </div>
                 </div>
-                <textarea id="postCaption" rows="4" placeholder="Escreva a legenda para Instagram, Facebook e YouTube..." class="textarea-field" required></textarea>
+                <textarea id="postCaption" rows="8" placeholder="Escreva sua ideia, rascunho ou legenda para Instagram, Facebook e YouTube..." class="textarea-field" required></textarea>
+                
+                <div class="ai-caption-feedback" id="aiCaptionFeedback" style="display: none;">
+                  <i class="fa-solid fa-circle-check"></i>
+                  <span id="aiCaptionFeedbackText">Legenda e hashtags otimizadas com sucesso!</span>
+                </div>
+
                 <div class="quick-tags">
                   <span class="tag-label">Tags rápidas:</span>
                   <button type="button" class="tag-btn" data-tag="#reels">#reels</button>
                   <button type="button" class="tag-btn" data-tag="#viral">#viral</button>
                   <button type="button" class="tag-btn" data-tag="#novidade">#novidade</button>
                   <button type="button" class="tag-btn" data-tag="#tecnologia">#tecnologia</button>
+                  <button type="button" class="tag-btn" data-tag="#games">#games</button>
+                  <button type="button" class="tag-btn" data-tag="#dicas">#dicas</button>
                 </div>
+              </div>
+
+              <!-- Visibilidade / Privacidade da Publicação -->
+              <div class="form-group visibility-mode-section">
+                <label class="section-label">
+                  <i class="fa-solid fa-lock-open"></i> Visibilidade da Publicação
+                </label>
+                <div class="visibility-toggles">
+                  <button type="button" class="visibility-btn active" data-privacy="public" id="privacyPublic">
+                    <i class="fa-solid fa-earth-americas"></i>
+                    <span>Público</span>
+                  </button>
+                  <button type="button" class="visibility-btn" data-privacy="private" id="privacyPrivate">
+                    <i class="fa-solid fa-lock"></i>
+                    <span>Privado</span>
+                  </button>
+                  <button type="button" class="visibility-btn" data-privacy="unlisted" id="privacyUnlisted">
+                    <i class="fa-solid fa-eye-slash"></i>
+                    <span>Não Listado</span>
+                  </button>
+                </div>
+                <small class="helper-text" id="privacyHelperText">A publicação ficará 100% visível para todos no Feed, Reels e YouTube.</small>
               </div>
 
               <!-- Tipo de Publicação: Imediata ou Agendada -->
@@ -310,7 +384,7 @@
                     <i class="fa-regular fa-clock"></i>
                     <input type="datetime-local" id="scheduleDateTime" class="input-field">
                   </div>
-                  <small class="helper-text">O robô em Node.js irá disparar a postagem no horário exato.</small>
+                  <small class="helper-text">O robô em Node.js irá disparar a postagem no horário exato com a visibilidade selecionada.</small>
                 </div>
               </div>
 
@@ -319,6 +393,13 @@
                 <i class="fa-solid fa-paper-plane" id="submitBtnIcon"></i>
                 <span id="submitBtnText">Publicar Imediatamente</span>
               </button>
+
+              <!-- Botão Secundário para Alternar / Salvar no Slot e ir para o próximo -->
+              <div style="display: flex; gap: 0.5rem; margin-top: 0.65rem;">
+                <button type="button" class="btn-card-action" id="btnNextVideoSlot" onclick="window.saveAndGoToNextSlot()" style="flex: 1; justify-content: center; background: rgba(59, 130, 246, 0.1); border-color: rgba(59, 130, 246, 0.3); color: #93c5fd; font-size: 0.8rem; font-weight: 700; padding: 0.65rem 1rem;">
+                  <i class="fa-solid fa-layer-group"></i> Salvar este vídeo & Preparar outro (até 3)
+                </button>
+              </div>
             </form>
           </div>
 
@@ -593,7 +674,7 @@
                       <div class="shorts-bottom-overlay">
                         <div class="shorts-channel-info">
                           <div class="user-avatar yt-avatar shorts-mini-avatar" id="ytShortsAvatar">GF</div>
-                          <span class="shorts-channel-handle" id="ytShortsChannelName">@GAMEFY_OFICIAL</span>
+                          <span class="shorts-channel-handle" id="ytShortsChannelName">@gamefyofc</span>
                           <button type="button" class="shorts-subscribe-btn">Inscrever-se</button>
                         </div>
                         <div class="shorts-caption-box">
@@ -601,7 +682,7 @@
                         </div>
                         <div class="shorts-sound-track">
                           <i class="fa-solid fa-music"></i>
-                          <span id="ytShortsAudioTrack">Som original - GAMEFY_OFICIAL</span>
+                          <span id="ytShortsAudioTrack">Som original - @gamefyofc</span>
                         </div>
                       </div>
                       <!-- Linha vermelha do Shorts -->
@@ -727,6 +808,110 @@
         </div>
       </section>
 
+      <!-- ================= TELA DE AGENDA & HORÁRIOS DE PICO ================= -->
+      <section id="schedule-view" class="view">
+        <div class="gallery-wrapper">
+          <div class="gallery-header-block">
+            <div class="gallery-header-info">
+              <h2><i class="fa-solid fa-calendar-days" style="color: #38bdf8;"></i> Agenda & Melhores Horários de Pico</h2>
+              <p class="subtitle">Planejamento estratégico de postagens e distribuição de até 3 vídeos por dia no canal @gamefyofc</p>
+            </div>
+            <div class="gallery-header-actions">
+              <button type="button" class="btn-create-shortcut" onclick="window.switchView('composer-view');">
+                <i class="fa-solid fa-plus"></i> Criar ou Programar Vídeo
+              </button>
+            </div>
+          </div>
+
+          <div class="schedule-grid-layout">
+            <!-- Coluna 1: Calendário Interativo -->
+            <div class="calendar-card">
+              <div class="calendar-header">
+                <h3 class="calendar-month-title" id="calendarMonthTitle">Outubro 2026</h3>
+                <div style="display: flex; gap: 0.5rem;">
+                  <button type="button" class="calendar-nav-btn" id="btnCalPrevMonth"><i class="fa-solid fa-chevron-left"></i></button>
+                  <button type="button" class="calendar-nav-btn" id="btnCalToday">Hoje</button>
+                  <button type="button" class="calendar-nav-btn" id="btnCalNextMonth"><i class="fa-solid fa-chevron-right"></i></button>
+                </div>
+              </div>
+              <div class="calendar-weekdays">
+                <div>DOM</div><div>SEG</div><div>TER</div><div>QUA</div><div>QUI</div><div>SEX</div><div>SÁB</div>
+              </div>
+              <div class="calendar-days-grid" id="calendarDaysGrid">
+                <!-- Gerado dinamicamente via JS -->
+              </div>
+              <div style="display: flex; gap: 1rem; align-items: center; margin-top: 1rem; font-size: 0.75rem; color: #94a3b8; padding-top: 0.75rem; border-top: 1px solid rgba(255,255,255,0.08); flex-wrap: wrap;">
+                <div style="display: flex; align-items: center; gap: 5px;">
+                  <span class="day-dot" style="background: #3b82f6;"></span> Dia Selecionado
+                </div>
+                <div style="display: flex; align-items: center; gap: 5px;">
+                  <span class="day-dot" style="background: #10b981;"></span> Vídeos Agendados
+                </div>
+                <div style="display: flex; align-items: center; gap: 5px;">
+                  <span class="day-dot" style="background: #ef4444;"></span> YouTube
+                </div>
+              </div>
+            </div>
+
+            <!-- Coluna 2: Picos Gamer & Programação do Dia -->
+            <div style="display: flex; flex-direction: column; gap: 1rem;">
+              <!-- Card dos 3 Melhores Horários -->
+              <div class="card" style="padding: 1.25rem;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.85rem; flex-wrap: wrap; gap: 0.5rem;">
+                  <h3 style="font-size: 0.98rem; font-weight: 700; color: #f8fafc; display: flex; align-items: center; gap: 0.5rem;">
+                    <i class="fa-solid fa-chart-line" style="color: #10b981;"></i> Top 3 Horários de Pico Gamer
+                  </h3>
+                  <button type="button" class="btn-card-action" onclick="window.applyPeakTimesToComposer()" style="padding: 0.35rem 0.75rem; font-size: 0.75rem; font-weight: 700; background: rgba(16, 185, 129, 0.15); border-color: rgba(16, 185, 129, 0.4); color: #6ee7b7;">
+                    <i class="fa-solid fa-bolt"></i> Usar na Fila (3 Vídeos)
+                  </button>
+                </div>
+                
+                <!-- Pico 1 -->
+                <div class="peak-time-card">
+                  <div class="peak-time-desc">
+                    <strong>☀️ 1º Pico: 12:00 (Almoço Gamer)</strong>
+                    <span>Maior taxa de cliques em Shorts rápidos e notícias.</span>
+                  </div>
+                  <span class="peak-time-badge">12:00</span>
+                </div>
+
+                <!-- Pico 2 -->
+                <div class="peak-time-card">
+                  <div class="peak-time-desc">
+                    <strong>🌇 2º Pico: 18:30 (Fim de Tarde / Volta)</strong>
+                    <span>Maior engajamento no feed do Instagram e YouTube.</span>
+                  </div>
+                  <span class="peak-time-badge">18:30</span>
+                </div>
+
+                <!-- Pico 3 -->
+                <div class="peak-time-card">
+                  <div class="peak-time-desc">
+                    <strong>🌙 3º Pico: 21:15 (Prime Time Gamer Noturno)</strong>
+                    <span>Audiência máxima online, gameplays longas e retenção.</span>
+                  </div>
+                  <span class="peak-time-badge">21:15</span>
+                </div>
+              </div>
+
+              <!-- Vídeos Programados do Dia Selecionado -->
+              <div class="card" style="padding: 1.25rem; flex: 1;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.85rem;">
+                  <h3 style="font-size: 0.95rem; font-weight: 700; color: #f8fafc;">
+                    <i class="fa-regular fa-calendar-check" style="color: #60a5fa;"></i> Programação de <span id="calSelectedDateText" style="color: #38bdf8;">Hoje</span>
+                  </h3>
+                  <span class="badge" id="calDayPostsCountBadge" style="background: rgba(59, 130, 246, 0.2); color: #93c5fd; font-size: 0.75rem; padding: 2px 8px; border-radius: 4px;">0 vídeos</span>
+                </div>
+
+                <div id="calDayScheduleList" style="display: flex; flex-direction: column; gap: 0.65rem;">
+                  <!-- Lista dos vídeos agendados pro dia ou botões para adicionar -->
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <!-- ================= TELA 3: CONTAS E APIS CONECTADAS ================= -->
       <section id="accounts-view" class="view">
         <div class="accounts-hub-wrapper">
@@ -737,11 +922,11 @@
               <h2><i class="fa-solid fa-circle-nodes"></i> Contas & Redes Conectadas</h2>
               <p class="subtitle">Gerencie suas conexões oficiais do Instagram, Facebook e YouTube em tempo real</p>
             </div>
-            <div class="accounts-header-actions">
+            <div class="accounts-header-actions" style="display: flex; align-items: center; gap: 0.65rem; flex-wrap: wrap;">
               <span class="status-chip active" id="chipMetaStatus"><i class="fa-solid fa-circle-check"></i> Meta API Conectada</span>
               <span class="status-chip active" id="chipYtStatus"><i class="fa-solid fa-circle-check"></i> YouTube API Conectada</span>
-              <button class="btn-demo-all" id="btnConnectAllDemo" title="Ativa simulação com 1 clique para as 3 redes">
-                <i class="fa-solid fa-wand-magic-sparkles"></i> Conectar Modo Teste
+              <button type="button" class="btn-create-shortcut" onclick="window.openAddAccountModal()" style="background: linear-gradient(135deg, #3b82f6, #1d4ed8); border: none; font-weight: 700; white-space: nowrap; padding: 0.5rem 0.95rem; font-size: 0.82rem;">
+                <i class="fa-solid fa-plus"></i> Conectar Mais Canais / Perfis
               </button>
             </div>
           </div>
@@ -799,9 +984,6 @@
                   <i class="fa-solid fa-arrow-up-right-from-square"></i> Ver no Instagram
                 </a>
                 <div class="card-sub-buttons">
-                  <button class="btn-card-sub" onclick="window.quickDemoConnect('instagram')" title="Modo Teste">
-                    <i class="fa-solid fa-vial"></i> Teste
-                  </button>
                   <button class="btn-card-sub danger" onclick="window.disconnectSocialAccount('instagram')" title="Desconectar">
                     <i class="fa-solid fa-power-off"></i> Sair
                   </button>
@@ -862,9 +1044,6 @@
                   <i class="fa-solid fa-arrow-up-right-from-square"></i> Ver no Facebook
                 </a>
                 <div class="card-sub-buttons">
-                  <button class="btn-card-sub" onclick="window.quickDemoConnect('facebook')" title="Modo Teste">
-                    <i class="fa-solid fa-vial"></i> Teste
-                  </button>
                   <button class="btn-card-sub danger" onclick="window.disconnectSocialAccount('facebook')" title="Desconectar">
                     <i class="fa-solid fa-power-off"></i> Sair
                   </button>
@@ -922,9 +1101,6 @@
                   <i class="fa-solid fa-arrow-up-right-from-square"></i> Ver no YouTube
                 </a>
                 <div class="card-sub-buttons">
-                  <button class="btn-card-sub" onclick="window.quickDemoConnect('youtube')" title="Modo Teste">
-                    <i class="fa-solid fa-vial"></i> Teste
-                  </button>
                   <button class="btn-card-sub danger" onclick="window.disconnectSocialAccount('youtube')" title="Desconectar">
                     <i class="fa-solid fa-power-off"></i> Sair
                   </button>
@@ -932,6 +1108,21 @@
               </div>
             </div>
 
+          </div>
+
+          <!-- Seção de Canais e Perfis Adicionais -->
+          <div id="extraChannelsSection" style="margin-top: 1.5rem; display: none;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.5rem;">
+              <h3 style="font-size: 1.05rem; font-weight: 700; color: #f8fafc; display: flex; align-items: center; gap: 0.5rem; margin: 0;">
+                <i class="fa-solid fa-circle-nodes" style="color: #38bdf8;"></i> Perfis & Canais Adicionais Conectados
+              </h3>
+              <button type="button" class="btn-card-action" onclick="window.openAddAccountModal()" style="padding: 0.35rem 0.75rem; font-size: 0.75rem; background: rgba(59, 130, 246, 0.15); color: #60a5fa; border-color: rgba(59, 130, 246, 0.3);">
+                <i class="fa-solid fa-plus"></i> Novo Canal / Perfil
+              </button>
+            </div>
+            <div class="accounts-cards-grid" id="extraChannelsGrid">
+              <!-- Cards gerados dinamicamente via JS -->
+            </div>
           </div>
 
           <!-- Informações de Segurança e Banco -->
@@ -1166,6 +1357,29 @@
               <label for="inputAccessToken" class="section-label" id="labelAccessToken">Token de Acesso (Access Token) *</label>
               <input type="password" id="inputAccessToken" class="input-field" placeholder="EAABwzL..." required>
               <small class="helper-text" id="helpAccessToken">Token de longa duração com permissão para publicar.</small>
+            </div>
+
+            <div class="form-group" id="groupRefreshToken" style="display: none;">
+              <label for="inputRefreshToken" class="section-label" style="display: flex; align-items: center; justify-content: space-between;">
+                <span><i class="fa-solid fa-infinity" style="color: #10b981;"></i> Refresh Token (Conexão Permanente Sem Expiração)</span>
+                <span class="badge" style="background: rgba(16, 185, 129, 0.2); color: #10b981; font-size: 0.72rem; padding: 2px 8px; border-radius: 4px;">Recomendado</span>
+              </label>
+              <input type="text" id="inputRefreshToken" class="input-field" placeholder="Ex: 1//04... (Cole aqui para não expirar em 1 hora!)">
+              <small class="helper-text" id="helpRefreshToken">Com o Refresh Token, o sistema renova a permissão do YouTube automaticamente em segundo plano para sempre!</small>
+            </div>
+
+            <div class="form-group" id="groupOAuthClient" style="display: none;">
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+                <div>
+                  <label for="inputClientId" class="section-label" style="font-size: 0.78rem;">Client ID (Opcional)</label>
+                  <input type="text" id="inputClientId" class="input-field" style="font-size: 0.8rem;" placeholder="Ex: 12345...apps.googleusercontent.com">
+                </div>
+                <div>
+                  <label for="inputClientSecret" class="section-label" style="font-size: 0.78rem;">Client Secret (Opcional)</label>
+                  <input type="password" id="inputClientSecret" class="input-field" style="font-size: 0.8rem;" placeholder="Ex: GOCSPX-...">
+                </div>
+              </div>
+              <small class="helper-text">Credenciais do projeto no Google Cloud (opcional se usar do OAuth Playground).</small>
             </div>
 
             <div class="form-group" id="groupApiKey" style="display: none;">
@@ -1420,6 +1634,129 @@
             <div class="modal-actions-bar">
               <button type="submit" class="btn-submit" style="background: linear-gradient(135deg, #f59e0b, #d97706);">
                 <i class="fa-solid fa-check"></i> Cadastrar Usuário
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal de Exclusão de Publicação (Local vs Tirar do Ar) -->
+    <div class="modal-overlay" id="deletePostModal" style="display: none;">
+      <div class="modal-card" style="max-width: 500px;">
+        <div class="modal-header" style="border-bottom: 1px solid rgba(239, 68, 68, 0.25);">
+          <div style="display: flex; align-items: center; gap: 0.75rem;">
+            <div style="width: 40px; height: 40px; border-radius: 10px; background: rgba(239, 68, 68, 0.15); display: flex; align-items: center; justify-content: center; color: #ef4444; font-size: 1.25rem;">
+              <i class="fa-solid fa-trash-can"></i>
+            </div>
+            <div>
+              <h3 style="margin: 0; color: #fff; font-size: 1.15rem; font-weight: 700;">Excluir Publicação</h3>
+              <span style="font-size: 0.78rem; color: #94a3b8;">Escolha o nível de exclusão para este conteúdo</span>
+            </div>
+          </div>
+          <button class="modal-close" onclick="window.closeDeleteModal()">&times;</button>
+        </div>
+        <div class="modal-content" style="padding-top: 1.25rem;">
+          <input type="hidden" id="deleteModalPostId">
+          <div id="deleteModalPostInfo" style="margin-bottom: 1.25rem; padding: 0.75rem; background: rgba(255,255,255,0.03); border-radius: 8px; border: 1px solid rgba(255,255,255,0.06); font-size: 0.88rem; color: #cbd5e1;">
+            <!-- Informação do post -->
+          </div>
+
+          <div class="delete-options-group" style="display: flex; flex-direction: column; gap: 0.85rem; margin-bottom: 1.5rem;">
+            <!-- Opção 1: Apenas do App -->
+            <label class="delete-option-card selected" id="optDeleteLocalCard" style="display: flex; align-items: flex-start; gap: 0.85rem; padding: 1rem; border-radius: 10px; background: rgba(255,255,255,0.04); border: 1.5px solid #3b82f6; cursor: pointer; transition: all 0.2s;">
+              <input type="radio" name="deleteScope" value="local" checked style="margin-top: 3px; accent-color: #3b82f6; width: 18px; height: 18px;">
+              <div>
+                <strong style="color: #f8fafc; font-size: 0.92rem; display: flex; align-items: center; gap: 0.4rem;">
+                  <i class="fa-solid fa-folder-minus" style="color: #60a5fa;"></i> Excluir apenas da Galeria do App
+                </strong>
+                <p style="margin: 0.35rem 0 0; font-size: 0.78rem; color: #94a3b8; line-height: 1.4;">
+                  Remove o registro e arquivos do aplicativo local. O vídeo ou post continuará publicado e ativo no YouTube/redes sociais.
+                </p>
+              </div>
+            </label>
+
+            <!-- Opção 2: Tirar do Ar nas Redes -->
+            <label class="delete-option-card" id="optDeleteOnlineCard" style="display: flex; align-items: flex-start; gap: 0.85rem; padding: 1rem; border-radius: 10px; background: rgba(239, 68, 68, 0.05); border: 1.5px solid rgba(239, 68, 68, 0.25); cursor: pointer; transition: all 0.2s;">
+              <input type="radio" name="deleteScope" value="online" style="margin-top: 3px; accent-color: #ef4444; width: 18px; height: 18px;">
+              <div>
+                <strong style="color: #fca5a5; font-size: 0.92rem; display: flex; align-items: center; gap: 0.4rem;">
+                  <i class="fa-solid fa-ban" style="color: #ef4444;"></i> Excluir do App e TIRAR DO AR das Redes
+                </strong>
+                <p style="margin: 0.35rem 0 0; font-size: 0.78rem; color: #f87171; line-height: 1.4;">
+                  Exclui do app E apaga o vídeo/post diretamente do YouTube (@gamefyofc) e do Facebook/Instagram via API oficial.
+                </p>
+              </div>
+            </label>
+          </div>
+
+          <div style="display: flex; gap: 0.75rem; justify-content: flex-end;">
+            <button type="button" class="btn-card-action" onclick="window.closeDeleteModal()" style="padding: 0.7rem 1.25rem;">
+              Cancelar
+            </button>
+            <button type="button" class="btn-submit" id="btnConfirmDeletePost" onclick="window.confirmExecuteDelete()" style="background: linear-gradient(135deg, #ef4444, #b91c1c); padding: 0.7rem 1.4rem;">
+              <i class="fa-solid fa-trash-can"></i> Confirmar Exclusão
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal Conectar Novo Canal / Perfil Extra -->
+    <div class="modal-overlay" id="addAccountModal" style="display: none;">
+      <div class="modal-card" style="max-width: 520px;">
+        <div class="modal-header">
+          <div style="display: flex; align-items: center; gap: 0.75rem;">
+            <div style="width: 40px; height: 40px; border-radius: 10px; background: rgba(59, 130, 246, 0.15); display: flex; align-items: center; justify-content: center; color: #60a5fa; font-size: 1.25rem;">
+              <i class="fa-solid fa-circle-plus"></i>
+            </div>
+            <div>
+              <h3 style="margin: 0; color: #fff; font-size: 1.15rem; font-weight: 700;">Conectar Novo Canal ou Perfil</h3>
+              <span style="font-size: 0.78rem; color: #94a3b8;">Adicione canais extras do YouTube, perfis do Instagram ou páginas do Facebook</span>
+            </div>
+          </div>
+          <button class="modal-close" onclick="window.closeAddAccountModal()">&times;</button>
+        </div>
+        <div class="modal-content" style="padding-top: 1.25rem;">
+          <form id="addAccountForm" onsubmit="window.handleAddAccountSubmit(event)">
+            <div class="form-group">
+              <label class="section-label">Rede Social *</label>
+              <select id="newAccPlatform" class="input-field" required onchange="window.updateAddAccountFields(this.value)">
+                <option value="youtube">🔴 YouTube (Canal Secundário / Cortes / Gameplays)</option>
+                <option value="instagram">📸 Instagram (Outro Perfil / Comercial / Marca)</option>
+                <option value="facebook">🔵 Facebook (Outra Página / Comunidade)</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label class="section-label" id="lblNewAccName">Nome do Canal *</label>
+              <input type="text" id="newAccName" class="input-field" placeholder="Ex: GAMEFY Shorts & Cortes" required>
+            </div>
+
+            <div class="form-group">
+              <label class="section-label" id="lblNewAccId">ID do Canal / Usuário (Opcional)</label>
+              <input type="text" id="newAccId" class="input-field" placeholder="Ex: UC_exemplo12345 ou @nomeperfil">
+            </div>
+
+            <div class="form-group">
+              <label class="section-label">Link do Canal / Perfil (Opcional)</label>
+              <input type="url" id="newAccUrl" class="input-field" placeholder="Ex: https://www.youtube.com/@seucanal2">
+            </div>
+
+            <div class="form-group">
+              <label class="section-label">Token de Acesso / API Key (Opcional)</label>
+              <input type="text" id="newAccToken" class="input-field" placeholder="Token OAuth2 ou chave de publicação">
+              <span style="font-size: 0.75rem; color: #94a3b8; margin-top: 4px; display: block;">
+                Deixe em branco para usar o gateway de conexão da rede.
+              </span>
+            </div>
+
+            <div style="display: flex; gap: 0.75rem; justify-content: flex-end; margin-top: 1.5rem;">
+              <button type="button" class="btn-card-action" onclick="window.closeAddAccountModal()" style="padding: 0.7rem 1.25rem;">
+                Cancelar
+              </button>
+              <button type="submit" class="btn-submit" id="btnSubmitAddAccount" style="background: linear-gradient(135deg, #3b82f6, #1d4ed8); padding: 0.7rem 1.4rem;">
+                <i class="fa-solid fa-circle-check"></i> Salvar e Conectar
               </button>
             </div>
           </form>

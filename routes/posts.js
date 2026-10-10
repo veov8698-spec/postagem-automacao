@@ -117,6 +117,14 @@ router.post('/', upload.fields([
       }
     }
 
+    // O Instagram EXIGE foto ou vídeo (não permite publicação apenas com texto)
+    if (platforms.includes('instagram') && mediaType === 'none') {
+      return res.status(400).json({
+        success: false,
+        error: 'O Instagram exige que você selecione uma foto ou vídeo para publicar (a rede não aceita postagens apenas com texto).'
+      });
+    }
+
     const scheduled = isScheduled === 'true' || isScheduled === true;
 
     // Se agendado, valida data futura
@@ -144,6 +152,12 @@ router.post('/', upload.fields([
       platforms
     });
 
+    // Detecta origem da requisição (Cloudflare Tunnel atual ou localhost)
+    const host = req.headers['x-forwarded-host'] || req.get('host');
+    const proto = req.headers['x-forwarded-proto'] || (req.secure ? 'https' : 'http');
+    post.currentOrigin = (host && !host.includes('localhost') && !host.includes('127.0.0.1')) ? `${proto}://${host}` : (process.env.PUBLIC_APP_URL || `${proto}://${host}`);
+
+    post.privacy = req.body.privacy || 'public';
     post.ytFormat = req.body.ytFormat;
     post.igFormat = req.body.igFormat || 'auto';
     post.fbFormat = req.body.fbFormat || 'auto';
@@ -207,12 +221,20 @@ router.post('/:id/publish-now', async (req, res) => {
   }
 });
 
-// Excluir post
+// Excluir post (localmente ou com remoção do ar nas redes sociais)
 router.delete('/:id', async (req, res) => {
   try {
     const post = await db.getPostById(req.params.id);
     if (!post) {
       return res.status(404).json({ success: false, error: 'Post não encontrado.' });
+    }
+
+    const removeOnline = req.query.removeOnline === 'true' || req.body?.removeOnline === true;
+    let networkResults = null;
+
+    if (removeOnline) {
+      console.log(`🗑️ [Delete Online] Solicitada remoção do post #${post.id} do ar das redes sociais...`);
+      networkResults = await publisherService.deletePostFromNetworks(post);
     }
 
     // Remover arquivo de mídia local se existir
@@ -226,9 +248,312 @@ router.delete('/:id', async (req, res) => {
     }
 
     await db.deletePost(req.params.id);
-    res.json({ success: true, message: 'Postagem removida com sucesso.' });
+
+    const msg = removeOnline 
+      ? 'Postagem excluída da galeria e removida do ar das redes sociais com sucesso!'
+      : 'Postagem removida da galeria do aplicativo com sucesso.';
+
+    res.json({ 
+      success: true, 
+      message: msg,
+      networkResults
+    });
   } catch (err) {
+    console.error('Erro ao excluir post:', err);
     res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// IA Copywriting & Hashtags Generator (OpenAI ChatGPT, Google Gemini e Motor Nativo com Correção Gramatical Real)
+router.post('/ai-enhance', async (req, res) => {
+  try {
+    const { title = '', caption = '', platforms = [], mediaType = 'image' } = req.body;
+
+    const rawInput = `${title} ${caption}`.trim();
+    if (!rawInput) {
+      return res.status(400).json({
+        success: false,
+        error: 'Digite pelo menos uma ideia, título ou rascunho de legenda para a I.A trabalhar.'
+      });
+    }
+
+    const axios = require('axios');
+    const targetPlatforms = Array.isArray(platforms) && platforms.length > 0 ? platforms.join(', ') : 'Instagram, Facebook, YouTube';
+
+    const promptSystem = `Você é o Criador de Conteúdo e Social Media Oficial do canal "GAMEFY" (@gamefyofc / Gamefy Ofic / GAMEFY_OFICIAL).
+Sua missão é pegar o rascunho do usuário, corrigir todos os erros gramaticais e ortográficos e produzir uma postagem/descrição profissional, dinâmica e equilibrada para YouTube, Instagram e Facebook.
+
+DIRETRIZES FUNDAMENTAIS:
+1. ADAPTAÇÃO TOTAL AO JOGO OU TEMA DIGITADO:
+   - Identifique com precisão o tema, jogo ou assunto que o usuário escreveu (pode ser GTA, Minecraft, Free Fire, Call of Duty, Fortnite, FIFA/EA FC, Resident Evil, jogos de luta/artes marciais, simuladores, tutoriais, tecnologia, hardware ou qualquer outro).
+   - Use o vocabulário, termos e gírias REAIS do jogo ou assunto em questão. NUNCA misture jogos diferentes e NUNCA force temas de corrida se o usuário estiver falando de outro tema.
+   - As hashtags geradas DEVEM ser 100% focadas no jogo ou tema digitado pelo usuário.
+
+2. TEXTO NATURAL E HUMANO (SEM RÓTULOS):
+   - NUNCA escreva tags como "[PARTE 1]", "[PARTE 2]", "[INÍCIO]", etc. O texto deve ser contínuo e pronto para publicar.
+   - NADA de frases motivacionais de coach ("A verdadeira maestria...", "supere seus limites").
+   - NADA de linguagem robótica ("Esta captura foca na análise de..."). Escreva como quem joga e cria conteúdo autêntico na internet.
+
+3. TAMANHO EQUILIBRADO (MÉDIO - NEM LONGO, NEM PEQUENO):
+   - Escreva 2 parágrafos curtos e objetivos (cerca de 4 a 6 linhas no total):
+     * 1º Parágrafo: Apresenta o momento, a gameplay ou o assunto do vídeo com energia e contexto real.
+     * 2º Parágrafo: Destaca um detalhe importante e faz uma pergunta direta e rápida para a comunidade comentar.
+
+4. CRÉDITOS OFICIAIS DO CANAL GAMEFY NO FINAL:
+   - Pule uma linha e adicione o bloco oficial de redes:
+━━━━━━━━━━━━━━━━━━━━
+🎮 GAMEFY | O seu canal gamer oficial!
+🔴 YouTube: @gamefyofc (https://www.youtube.com/@gamefyofc)
+📸 Instagram: @gamefyofc (https://www.instagram.com/gamefyofc)
+📘 Facebook: Gamefy Ofic (https://www.facebook.com/1097087796819080)
+━━━━━━━━━━━━━━━━━━━━
+   - Finalize com 6 a 10 hashtags precisas do jogo ou tema digitado.
+
+5. TÍTULO LIMPO E ATRATIVO:
+   - Crie um título direto, moderno e empolgante, 100% focado no tema ou jogo do usuário.
+
+Retorne EXCLUSIVAMENTE um JSON válido:
+{
+  "title": "Título direto e chamativo para o jogo ou tema digitado",
+  "caption": "Texto completo com a descrição, pergunta, créditos Gamefy e hashtags do jogo",
+  "hashtags": ["#tagDoJogo1", "#tagDoJogo2"]
+}`;
+
+    // 1. TENTATIVA GOOGLE GEMINI (Lê da variável de ambiente GEMINI_API_KEY)
+    const geminiKey = process.env.GEMINI_API_KEY;
+    if (geminiKey && geminiKey.trim().length > 10) {
+      const geminiModels = ['gemini-3.5-flash', 'gemini-3.5-flash-lite', 'gemini-3.1-flash-lite', 'gemini-3.8-flash'];
+      for (const m of geminiModels) {
+        try {
+          const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${m}:generateContent?key=${geminiKey.trim()}`;
+          const geminiBody = {
+            contents: [{
+              parts: [{
+                text: `${promptSystem}\n\nRASCUNHO DO USUÁRIO PARA VOCÊ ANALISAR E REESCREVER TOTALMENTE:\n"${rawInput}"`
+              }]
+            }],
+            generationConfig: {
+              responseMimeType: "application/json",
+              temperature: 0.7
+            }
+          };
+
+          const gRes = await axios.post(geminiUrl, geminiBody, { timeout: 18000 });
+          const gText = gRes.data?.candidates?.[0]?.content?.parts?.[0]?.text;
+          if (gText) {
+            const cleanJson = gText.replace(/^```json\s*/i, '').replace(/\s*```$/i, '').trim();
+            const parsed = JSON.parse(cleanJson);
+            
+            const resolvedTitle = (parsed.title || parsed.titulo || (Array.isArray(parsed.titulos_sugeridos) ? parsed.titulos_sugeridos[0] : null) || title)
+              .replace(/\[\s*PARTE\s*\d+\s*[-–]?\s*[^\]]*\]\s*:?/gi, '')
+              .trim();
+
+            let resolvedCaption = parsed.caption || parsed.legenda_redes_sociais || parsed.legenda || parsed.texto || parsed.descricao;
+            if (resolvedCaption) {
+              resolvedCaption = resolvedCaption
+                .replace(/\[\s*PARTE\s*\d+\s*[-–]?\s*[^\]]*\]\s*:?/gi, '')
+                .replace(/\[\s*(INÍCIO|MEIO|FIM|FINAL)\s*\]\s*:?/gi, '')
+                .replace(/\n{3,}/g, '\n\n')
+                .trim();
+            }
+
+            const resolvedHashtags = Array.isArray(parsed.hashtags) 
+              ? parsed.hashtags 
+              : (typeof parsed.hashtags === 'string' ? (parsed.hashtags.match(/#[a-zA-Z0-9_]+/g) || []) : []);
+
+            if (resolvedCaption) {
+              let fullCaption = resolvedCaption;
+              if (resolvedHashtags.length > 0 && !fullCaption.includes('#')) {
+                fullCaption = `${fullCaption}\n\n${resolvedHashtags.join(' ')}`;
+              }
+
+              return res.json({
+                success: true,
+                source: 'gemini',
+                title: resolvedTitle,
+                caption: fullCaption,
+                hashtags: resolvedHashtags
+              });
+            }
+          }
+        } catch (gemErr) {
+          console.warn(`Aviso: Chamada Gemini (${m}) falhou:`, gemErr.response?.data?.error?.message || gemErr.message);
+        }
+      }
+    }
+
+    // 2. TENTATIVA OPENAI CHATGPT (Lê da variável de ambiente OPENAI_API_KEY)
+    const openAiKey = process.env.OPENAI_API_KEY;
+    if (openAiKey && openAiKey.trim().length > 10) {
+      try {
+        const response = await axios.post(
+          'https://api.openai.com/v1/chat/completions',
+          {
+            model: 'gpt-4o-mini',
+            messages: [
+              { role: 'system', content: promptSystem },
+              { role: 'user', content: `Reescreva, analise e corrija com perfeição este rascunho:\n"${rawInput}"` }
+            ],
+            temperature: 0.7,
+            response_format: { type: 'json_object' }
+          },
+          {
+            headers: {
+              'Authorization': `Bearer ${openAiKey.trim()}`,
+              'Content-Type': 'application/json'
+            },
+            timeout: 15000
+          }
+        );
+
+        const content = response.data.choices?.[0]?.message?.content;
+        if (content) {
+          const cleanJson = content.replace(/^```json\s*/i, '').replace(/\s*```$/i, '').trim();
+          const parsed = JSON.parse(cleanJson);
+          const resolvedTitle = parsed.title || parsed.titulo || title;
+          let resolvedCaption = parsed.caption || parsed.legenda || parsed.texto;
+          const resolvedHashtags = Array.isArray(parsed.hashtags) ? parsed.hashtags : [];
+
+          if (resolvedCaption) {
+            let fullCaption = resolvedCaption;
+            if (resolvedHashtags.length > 0 && !fullCaption.includes('#')) {
+              fullCaption = `${fullCaption}\n\n${resolvedHashtags.join(' ')}`;
+            }
+
+            return res.json({
+              success: true,
+              source: 'openai',
+              title: resolvedTitle,
+              caption: fullCaption,
+              hashtags: resolvedHashtags
+            });
+          }
+        }
+      } catch (aiErr) {
+        console.warn('Aviso: Chamada OpenAI falhou:', aiErr.response?.data?.error?.message || aiErr.message);
+      }
+    }
+
+    // =========================================================================
+    // 3. MOTOR NATIVO DE REESCRITA E CORREÇÃO GRAMATICAL AUTOMÁTICA
+    // Não apenas cola o texto do usuário: ele RECONSTRÓI a frase corrigida!
+    // =========================================================================
+    const lower = rawInput.toLowerCase();
+
+    // Dicionário de correções ortográficas e gírias comuns
+    const spellCorrections = [
+      [/\bvc\b/gi, 'você'],
+      [/\bvcs\b/gi, 'vocês'],
+      [/\btb\b|\btbm\b/gi, 'também'],
+      [/\bpq\b|\bpra que\b/gi, 'porque'],
+      [/\bnao\b|\bnaum\b/gi, 'não'],
+      [/\bto\b|\btô\b/gi, 'estou'],
+      [/\bta\b|\btá\b/gi, 'está'],
+      [/\bmais\b(?=\s+(bom|ruim|fácil|difícil|legal|caro))/gi, 'mas'],
+      [/\bce\b|\bcê\b/gi, 'você'],
+      [/\bblz\b/gi, 'beleza'],
+      [/\bflw\b/gi, 'valeu'],
+      [/\bkra\b|\bcara\b/gi, 'cara'],
+      [/\bmt\b|\bmto\b/gi, 'muito'],
+      [/\bqnd\b|\bquando\b/gi, 'quando'],
+      [/\bq\b/gi, 'que'],
+      [/\bcomcordo\b/gi, 'concordo'],
+      [/\bconcerteza\b/gi, 'com certeza'],
+      [/\bmenas\b/gi, 'menos'],
+      [/\bseje\b/gi, 'seja'],
+      [/\bgeito\b/gi, 'jeito'],
+      [/\bfazem\s+(\d+)\s+anos\b/gi, 'faz $1 anos'],
+      [/\bassistir\s+o\b/gi, 'assistir ao'],
+      [/\bpou\b/gi, 'ou'],
+      [/\bruin\b/gi, 'ruim'],
+      [/\bceleciono\b/gi, 'seleciono'],
+      [/\bcentralizaod\b/gi, 'centralizado']
+    ];
+
+    let correctedDraft = rawInput
+      .replace(/[$@%&*+=\/\\^~`<>]/g, '')
+      .replace(/#[a-zA-Z0-9_]+/g, '')
+      .replace(/\s+/g, ' ')
+      .trim();
+
+    // Aplica as correções ortográficas
+    spellCorrections.forEach(([regex, repl]) => {
+      correctedDraft = correctedDraft.replace(regex, repl);
+    });
+
+    // Capitalização de início de frase e pontuação correta
+    correctedDraft = correctedDraft.charAt(0).toUpperCase() + correctedDraft.slice(1);
+    if (!correctedDraft.endsWith('.') && !correctedDraft.endsWith('!') && !correctedDraft.endsWith('?')) {
+      correctedDraft += '.';
+    }
+
+    let nicheTitle = 'Destaque Gamer Oficial';
+    let cta = '💬 O que você achou dessa gameplay? Deixe sua opinião nos comentários!';
+    let baseTags = ['#gaming', '#games', '#gamer', '#gameplay', '#gamefy', '#gamingbrasil', '#reels'];
+
+    if (lower.match(/minecraft|mine|redstone|creeper|survival|bloco|steve|nether/)) {
+      nicheTitle = 'Aventuras e Construções no Minecraft';
+      cta = '💬 Qual foi a sua construção ou projeto mais insano no mapa? Deixe nos comentários!';
+      baseTags = ['#minecraft', '#minecraftsurvival', '#redstone', '#minecraftbuilds', '#gamer', '#gamefy', '#gamingbrasil'];
+    } else if (lower.match(/gta|grand theft|san andreas|cayo|heist|lossantos/)) {
+      nicheTitle = 'Ação e Caos em GTA';
+      cta = '💬 Qual é a sua missão ou golpe favorito no jogo? Comente aqui embaixo!';
+      baseTags = ['#gta', '#gtav', '#gtaonline', '#gtamods', '#gameplay', '#gamefy', '#gamingbrasil'];
+    } else if (lower.match(/fifa|ea fc|futebol|eafc|fut|champions|gol/)) {
+      nicheTitle = 'Show de Bola nos Gramados Virtuais';
+      cta = '💬 Quem você colocaria de titular absoluto no seu time? Conta aí!';
+      baseTags = ['#eafc', '#fifa', '#futebol', '#ultimateteam', '#gameplay', '#gamefy', '#gamingbrasil'];
+    } else if (lower.match(/fortnite|battle royale|vbucks/)) {
+      nicheTitle = 'Vitória Royale no Fortnite';
+      cta = '💬 Quantas vitórias royale você já garantiu nessa temporada? Deixe nos comentários!';
+      baseTags = ['#fortnite', '#battleroyale', '#fortniteclips', '#gamefy', '#gamingbrasil'];
+    } else if (lower.match(/free fire|ff|capa|nobru|guilda/)) {
+      nicheTitle = 'Dominando o Mapa no Free Fire';
+      cta = '💬 Marca aquele parceiro de squad que nunca te abandona nas partidas!';
+      baseTags = ['#freefire', '#ff', '#freefirebrasil', '#gamefy', '#gamingbrasil'];
+    } else if (lower.match(/cod|warzone|call of duty|csgo|cs2|valorant|tiro|fps/)) {
+      nicheTitle = 'Precisão Máxima nos Combates FPS';
+      cta = '💬 Qual é a sua arma favorita para garantir o clutch? Comente aqui embaixo!';
+      baseTags = ['#warzone', '#callofduty', '#fps', '#cs2', '#valorant', '#gamefy', '#gamingbrasil'];
+    } else if (lower.match(/forza|carro|corrida|velocidade|automobil|skyline|drift|piloto/)) {
+      nicheTitle = 'Aceleração Máxima nas Pistas';
+      cta = '💬 Qual máquina você escolheria para dominar esse traçado? Comente aqui embaixo!';
+      baseTags = ['#forza', '#forzahorizon', '#gameplay', '#jogosdecorrida', '#carros', '#drift', '#velocidade', '#gamefy'];
+    } else if (lower.match(/luta|karat|karate|judo|boxe|mma|ufc|muay|artes marciais|combate/)) {
+      nicheTitle = 'Técnica e Combate Marcial';
+      cta = '👊 O que achou dessa técnica aplicada no tatame? Deixe seu comentário!';
+      baseTags = ['#artesmarciais', '#luta', '#karate', '#combate', '#disciplina', '#treino', '#gamefy'];
+    } else if (lower.match(/dica|tutorial|como|passo|aprend|truqu|facil/)) {
+      nicheTitle = 'Dica e Tutorial Passo a Passo';
+      cta = '📌 Salve esta dica para consultar depois e compartilhe com um amigo!';
+      baseTags = ['#dicas', '#tutorial', '#utilidade', '#aprendizado', '#dicasuteis', '#gamefy'];
+    }
+
+    // Título inteligente
+    let enhancedTitle = title.trim();
+    if (!enhancedTitle) {
+      enhancedTitle = nicheTitle;
+    } else {
+      spellCorrections.forEach(([regex, repl]) => {
+        enhancedTitle = enhancedTitle.replace(regex, repl);
+      });
+      enhancedTitle = enhancedTitle.charAt(0).toUpperCase() + enhancedTitle.slice(1);
+    }
+
+    // Montar legenda profissional 100% fluida com créditos oficiais Gamefy
+    const gamefyCredits = `━━━━━━━━━━━━━━━━━━━━\n🎮 GAMEFY | O seu canal gamer oficial!\n🔴 YouTube: @gamefyofc (https://www.youtube.com/@gamefyofc)\n📸 Instagram: @gamefyofc (https://www.instagram.com/gamefyofc)\n📘 Facebook: Gamefy Ofic (https://www.facebook.com/1097087796819080)\n━━━━━━━━━━━━━━━━━━━━`;
+    const enhancedCaption = `${correctedDraft}\n\n${cta}\n\n${gamefyCredits}\n\n${baseTags.join(' ')}`;
+
+    return res.json({
+      success: true,
+      source: 'native_engine',
+      title: enhancedTitle,
+      caption: enhancedCaption,
+      hashtags: baseTags
+    });
+  } catch (err) {
+    console.error('Erro na melhoria com IA:', err);
+    res.status(500).json({ success: false, error: 'Erro ao gerar melhorias de legenda.' });
   }
 });
 

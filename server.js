@@ -24,6 +24,18 @@ app.use((req, res, next) => {
   res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
   res.setHeader('Pragma', 'no-cache');
   res.setHeader('Expires', '0');
+
+  // Sincronização dinâmica de URL pública do Túnel Cloudflare para download de mídias pela Meta/Instagram
+  const host = req.headers['x-forwarded-host'] || req.headers.host;
+  const proto = req.headers['x-forwarded-proto'] || (req.secure ? 'https' : 'http');
+  if (host && !host.includes('localhost') && !host.includes('127.0.0.1')) {
+    const activeUrl = `${proto}://${host}`;
+    if (process.env.PUBLIC_APP_URL !== activeUrl) {
+      process.env.PUBLIC_APP_URL = activeUrl;
+      console.log(`[Host Sync] URL pública atualizada para o Instagram: ${activeUrl}`);
+    }
+  }
+
   next();
 });
 

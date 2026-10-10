@@ -141,6 +141,11 @@ document.addEventListener('DOMContentLoaded', () => {
   const helpAccessToken = document.getElementById('helpAccessToken');
   const groupApiKey = document.getElementById('groupApiKey');
   const inputApiKey = document.getElementById('inputApiKey');
+  const groupRefreshToken = document.getElementById('groupRefreshToken');
+  const inputRefreshToken = document.getElementById('inputRefreshToken');
+  const groupOAuthClient = document.getElementById('groupOAuthClient');
+  const inputClientId = document.getElementById('inputClientId');
+  const inputClientSecret = document.getElementById('inputClientSecret');
   const btnSaveCredentials = document.getElementById('btnSaveCredentials');
 
   // Elementos de Status do Sistema
@@ -180,6 +185,8 @@ document.addEventListener('DOMContentLoaded', () => {
       loadGroups();
     } else if (targetView === 'admin-view') {
       loadAdminUsers();
+    } else if (targetView === 'schedule-view') {
+      if (typeof loadScheduleView === 'function') loadScheduleView();
     }
   };
 
@@ -707,10 +714,102 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
+  // ================= IA COPYWRITING & HASHTAGS (CHATGPT) =================
+  const btnAiEnhance = document.getElementById('btnAiEnhance');
+  const aiCaptionFeedback = document.getElementById('aiCaptionFeedback');
+  const aiCaptionFeedbackText = document.getElementById('aiCaptionFeedbackText');
+
+  if (btnAiEnhance) {
+    btnAiEnhance.addEventListener('click', async () => {
+      const currentCaption = postCaption ? postCaption.value.trim() : '';
+      const currentTitle = postTitle ? postTitle.value.trim() : '';
+
+      if (!currentCaption && !currentTitle) {
+        showToast('Digite pelo menos um rascunho de legenda ou ideia para a I.A melhorar!', 'info');
+        if (postCaption) postCaption.focus();
+        return;
+      }
+
+      const origHtml = btnAiEnhance.innerHTML;
+      btnAiEnhance.disabled = true;
+      btnAiEnhance.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> <span>Criando com I.A...</span>';
+
+      try {
+        const payload = {
+          title: currentTitle,
+          caption: currentCaption,
+          platforms: state.selectedPlatforms,
+          mediaType: state.selectedFile?.type.startsWith('video/') ? 'video' : 'image'
+        };
+
+        const res = await fetch('/api/posts/ai-enhance', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        const data = await res.json();
+
+        if (data.success) {
+          if (postCaption && data.caption) {
+            postCaption.value = data.caption;
+            postCaption.dispatchEvent(new Event('input'));
+          }
+          if (postTitle && data.title) {
+            postTitle.value = data.title;
+            postTitle.dispatchEvent(new Event('input'));
+          }
+
+          if (aiCaptionFeedback && aiCaptionFeedbackText) {
+            const engineLabel = data.source === 'gemini' ? 'Google Gemini' : (data.source === 'openai' ? 'ChatGPT (OpenAI)' : 'Assistente IA Integrado');
+            aiCaptionFeedbackText.textContent = `Legenda, título e hashtags aperfeiçoados com sucesso via ${engineLabel}!`;
+            aiCaptionFeedback.style.display = 'flex';
+            setTimeout(() => {
+              if (aiCaptionFeedback) aiCaptionFeedback.style.display = 'none';
+            }, 6000);
+          }
+
+          showToast('Legenda e hashtags melhoradas com sucesso!', 'success');
+        } else {
+          showToast(data.error || 'Não foi possível melhorar a legenda.', 'error');
+        }
+      } catch (err) {
+        console.error('Erro ao chamar IA:', err);
+        showToast('Erro ao conectar com assistente de IA.', 'error');
+      } finally {
+        btnAiEnhance.disabled = false;
+        btnAiEnhance.innerHTML = origHtml;
+      }
+    });
+  }
+
   // Inicializa o estado visual das plataformas e prévias
   updateSelectAllButtonText();
   updateFormatVisibility();
   updateVisiblePreviewCards();
+
+  // ================= VISIBILIDADE / PRIVACIDADE =================
+  state.privacy = 'public';
+  const privacyBtns = document.querySelectorAll('.visibility-btn');
+  const privacyHelperText = document.getElementById('privacyHelperText');
+
+  privacyBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      privacyBtns.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      state.privacy = btn.getAttribute('data-privacy') || 'public';
+
+      if (privacyHelperText) {
+        if (state.privacy === 'public') {
+          privacyHelperText.textContent = 'A publicação ficará 100% visível para todos no Feed, Reels e YouTube.';
+        } else if (state.privacy === 'private') {
+          privacyHelperText.textContent = 'A publicação ficará privada (apenas você / administradores poderão ver).';
+        } else if (state.privacy === 'unlisted') {
+          privacyHelperText.textContent = 'Não listado: apenas pessoas com o link direto poderão assistir/ver o vídeo.';
+        }
+      }
+    });
+  });
 
   // ================= MODO DE PUBLICAÇÃO =================
   if (modeDirect) {
@@ -741,6 +840,85 @@ document.addEventListener('DOMContentLoaded', () => {
     postForm.addEventListener('submit', async (e) => {
       e.preventDefault();
 
+      if (typeof saveCurrentSlotState === 'function') {
+        saveCurrentSlotState();
+      }
+
+      // Se estiver em modo lote ou múltiplos slots estiverem configurados com conteúdo
+      const activeConfiguredSlots = (typeof videoSlots !== 'undefined')
+        ? videoSlots.filter(s => (s.caption && s.caption.trim()) || s.file)
+        : [];
+
+      if (videoMode === 'batch' && activeConfiguredSlots.length > 1) {
+        // Envio em Lote (Até 3 Vídeos)
+        btnSubmitPost.disabled = true;
+        const originalText = submitBtnText.textContent;
+
+        try {
+          let successCount = 0;
+          for (let i = 0; i < activeConfiguredSlots.length; i++) {
+            const slot = activeConfiguredSlots[i];
+            submitBtnText.textContent = `Processando Vídeo ${i + 1} de ${activeConfiguredSlots.length}...`;
+
+            const formData = new FormData();
+            formData.append('title', slot.title || '');
+            formData.append('caption', slot.caption || '');
+            formData.append('platforms', JSON.stringify(slot.platforms || ['instagram', 'facebook', 'youtube']));
+            formData.append('isScheduled', slot.isScheduled ? 'true' : 'false');
+            if (slot.isScheduled && slot.scheduledAt) {
+              formData.append('scheduledAt', slot.scheduledAt);
+            }
+            if (slot.file) {
+              formData.append('media', slot.file);
+            }
+            if (slot.thumbFile) {
+              formData.append('thumbnail', slot.thumbFile);
+            }
+            formData.append('privacy', slot.privacy || 'public');
+            formData.append('igFormat', slot.igFormat || 'auto');
+            formData.append('fbFormat', slot.fbFormat || 'auto');
+            formData.append('ytFormat', slot.ytFormat || 'auto');
+
+            const res = await fetch('/api/posts', {
+              method: 'POST',
+              body: formData
+            });
+            const data = await res.json();
+            if (data.success) {
+              successCount++;
+            }
+          }
+
+          showToast(`🎉 Fila concluída! ${successCount} de ${activeConfiguredSlots.length} vídeos foram salvos/agendados com sucesso!`, 'success');
+
+          // Resetar todos os slots
+          videoSlots.forEach(s => {
+            s.title = '';
+            s.caption = '';
+            s.file = null;
+            s.fileUrl = null;
+            s.thumbFile = null;
+            s.thumbUrl = null;
+            s.isConfigured = false;
+          });
+          currentSlot = 0;
+          if (typeof loadSlotIntoForm === 'function') loadSlotIntoForm(0);
+          if (typeof updateSlotsUI === 'function') updateSlotsUI();
+
+          updateSystemStatus();
+          const tabGal = document.getElementById('tabGallery');
+          if (tabGal) tabGal.click();
+          return;
+        } catch (err) {
+          showToast('Erro ao processar lote de vídeos: ' + err.message, 'error');
+        } finally {
+          btnSubmitPost.disabled = false;
+          submitBtnText.textContent = originalText;
+        }
+        return;
+      }
+
+      // Envio Individual (Single Slot)
       const selectedPlatforms = Array.from(document.querySelectorAll('input[name="platform"]:checked')).map(i => i.value);
       if (selectedPlatforms.length === 0) {
         showToast('Selecione ao menos uma rede social para postar!', 'error');
@@ -780,6 +958,9 @@ document.addEventListener('DOMContentLoaded', () => {
       if (state.selectedThumbnailFile) {
         formData.append('thumbnail', state.selectedThumbnailFile);
       }
+
+      // Envia Visibilidade / Privacidade (public, private, unlisted)
+      formData.append('privacy', state.privacy || 'public');
 
       // Envia formato do Instagram (Reels / Feed / Story / Auto)
       formData.append('igFormat', state.igFormat || 'auto');
@@ -823,6 +1004,15 @@ document.addEventListener('DOMContentLoaded', () => {
           postCaption.dispatchEvent(new Event('input'));
           postTitle.dispatchEvent(new Event('input'));
           if (modeDirect) modeDirect.click();
+
+          // Resetar slot atual
+          if (typeof videoSlots !== 'undefined' && videoSlots[currentSlot]) {
+            videoSlots[currentSlot].isConfigured = false;
+            videoSlots[currentSlot].title = '';
+            videoSlots[currentSlot].caption = '';
+            videoSlots[currentSlot].file = null;
+            if (typeof updateSlotsUI === 'function') updateSlotsUI();
+          }
 
           updateSystemStatus();
 
@@ -981,8 +1171,8 @@ document.addEventListener('DOMContentLoaded', () => {
         } else if (plat === 'youtube') {
           iconBg = '#ff0000';
           platIcon = 'fa-youtube';
-          platName = 'YouTube (GAMEFY_OFICIAL)';
-          defaultUrl = 'https://www.youtube.com/@GAMEFY_OFICIAL';
+          platName = 'YouTube (@gamefyofc)';
+          defaultUrl = 'https://www.youtube.com/@gamefyofc';
         }
 
         const liveUrl = item.publicUrl || item.postUrl || defaultUrl;
@@ -1418,7 +1608,11 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       const btnDelete = card.querySelector('.btn-delete');
-      if (btnDelete) btnDelete.addEventListener('click', () => deletePost(post.id));
+      if (btnDelete) {
+        btnDelete.addEventListener('click', () => {
+          window.openDeleteModal(post.id, post.title, post.platforms || post.platform, post.status === 'published');
+        });
+      }
 
       galleryGrid.appendChild(card);
     });
@@ -1441,22 +1635,120 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  async function deletePost(id) {
-    if (!confirm('Tem certeza que deseja excluir esta postagem da galeria?')) return;
-    try {
-      const res = await fetch(`/api/posts/${id}`, { method: 'DELETE' });
-      const data = await res.json();
-      if (data.success) {
-        showToast('Postagem removida da galeria.', 'info');
-        loadGallery();
-        updateSystemStatus();
+  // ================= MODAL DE EXCLUSÃO INTELIGENTE (LOCAL VS TIRAR DO AR) =================
+  let pendingDeletePostId = null;
+
+  window.openDeleteModal = function(id, title, platforms, isPublished) {
+    pendingDeletePostId = id;
+    const deleteModal = document.getElementById('deletePostModal');
+    const deleteInfo = document.getElementById('deleteModalPostInfo');
+    const hiddenId = document.getElementById('deleteModalPostId');
+    if (!deleteModal) return;
+
+    if (hiddenId) hiddenId.value = id;
+    if (deleteInfo) {
+      const platStr = Array.isArray(platforms) ? platforms.map(p => capitalize(p)).join(', ') : (platforms || 'Redes sociais');
+      deleteInfo.innerHTML = `
+        <div style="font-weight: 700; color: #f8fafc; font-size: 0.95rem; margin-bottom: 4px;">
+          ${escapeHtml(title || 'Publicação sem título')}
+        </div>
+        <div style="font-size: 0.8rem; color: #94a3b8; display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+          <span>ID: #${id}</span> ·
+          <span>Destinos: <strong style="color: #cbd5e1;">${platStr}</strong></span> ·
+          <span style="color: ${isPublished ? '#10b981' : '#f59e0b'}; font-weight: 600;">
+            ${isPublished ? 'Publicado Online' : 'Agendado / Rascunho'}
+          </span>
+        </div>
+      `;
+    }
+
+    // Resetar para 'local'
+    const radLocal = document.querySelector('input[name="deleteScope"][value="local"]');
+    if (radLocal) radLocal.checked = true;
+    updateDeleteRadioStyles('local');
+
+    deleteModal.style.display = 'flex';
+  };
+
+  window.closeDeleteModal = function() {
+    const deleteModal = document.getElementById('deletePostModal');
+    if (deleteModal) deleteModal.style.display = 'none';
+    pendingDeletePostId = null;
+  };
+
+  function updateDeleteRadioStyles(val) {
+    const cardLocal = document.getElementById('optDeleteLocalCard');
+    const cardOnline = document.getElementById('optDeleteOnlineCard');
+    if (cardLocal) {
+      if (val === 'local') {
+        cardLocal.style.borderColor = '#3b82f6';
+        cardLocal.style.background = 'rgba(59, 130, 246, 0.12)';
       } else {
-        showToast(data.error || 'Erro ao excluir.', 'error');
+        cardLocal.style.borderColor = 'rgba(255,255,255,0.08)';
+        cardLocal.style.background = 'rgba(255,255,255,0.02)';
       }
-    } catch (_) {
-      showToast('Erro de conexão.', 'error');
+    }
+    if (cardOnline) {
+      if (val === 'online') {
+        cardOnline.style.borderColor = '#ef4444';
+        cardOnline.style.background = 'rgba(239, 68, 68, 0.15)';
+      } else {
+        cardOnline.style.borderColor = 'rgba(239, 68, 68, 0.25)';
+        cardOnline.style.background = 'rgba(239, 68, 68, 0.04)';
+      }
     }
   }
+
+  // Monitorar clique nos radios do modal de exclusão
+  document.querySelectorAll('input[name="deleteScope"]').forEach(radio => {
+    radio.addEventListener('change', (e) => {
+      updateDeleteRadioStyles(e.target.value);
+    });
+  });
+
+  window.confirmExecuteDelete = async function() {
+    const id = pendingDeletePostId || (document.getElementById('deleteModalPostId') ? document.getElementById('deleteModalPostId').value : null);
+    if (!id) return;
+
+    const selectedScope = document.querySelector('input[name="deleteScope"]:checked')?.value || 'local';
+    const removeOnline = (selectedScope === 'online');
+
+    const btnConfirm = document.getElementById('btnConfirmDeletePost');
+    const originalText = btnConfirm ? btnConfirm.innerHTML : '';
+    if (btnConfirm) {
+      btnConfirm.disabled = true;
+      btnConfirm.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Processando Exclusão...';
+    }
+
+    try {
+      const res = await fetch(`/api/posts/${id}?removeOnline=${removeOnline}`, {
+        method: 'DELETE',
+        headers: (typeof getAuthHeaders === 'function') ? getAuthHeaders() : {}
+      });
+      const data = await res.json();
+      if (data.success) {
+        if (removeOnline) {
+          showToast('🗑️ Post excluído do app e solicitação de remoção oficial enviada às redes sociais!', 'success');
+        } else {
+          showToast('📁 Postagem removida da galeria do aplicativo com sucesso.', 'info');
+        }
+        window.closeDeleteModal();
+        loadGallery();
+        updateSystemStatus();
+        if (typeof renderCalendarDays === 'function') renderCalendarDays();
+        if (typeof renderSelectedDaySchedule === 'function') renderSelectedDaySchedule();
+      } else {
+        showToast(data.error || 'Erro ao processar exclusão.', 'error');
+      }
+    } catch (err) {
+      showToast('Erro de comunicação com o servidor ao excluir.', 'error');
+    } finally {
+      if (btnConfirm) {
+        btnConfirm.disabled = false;
+        btnConfirm.innerHTML = originalText;
+      }
+    }
+  };
 
   // ================= MODAL DE DETALHES AVANÇADO =================
   function openPostModal(post) {
@@ -1538,8 +1830,8 @@ document.addEventListener('DOMContentLoaded', () => {
         <a href="https://www.instagram.com/gamefyofc" target="_blank" style="flex: 1; min-width: 160px; text-decoration: none; text-align: center; background: linear-gradient(135deg, #e1306c 0%, #fd1d1d 50%, #f77737 100%); color: #fff; padding: 0.65rem 1rem; border-radius: 10px; font-weight: 700; font-size: 0.85rem; display: flex; align-items: center; justify-content: center; gap: 0.45rem;">
           <i class="fa-brands fa-instagram"></i> @gamefyofc
         </a>
-        <a href="https://www.youtube.com/@GAMEFY_OFICIAL" target="_blank" style="flex: 1; min-width: 160px; text-decoration: none; text-align: center; background: #ff0000; color: #fff; padding: 0.65rem 1rem; border-radius: 10px; font-weight: 700; font-size: 0.85rem; display: flex; align-items: center; justify-content: center; gap: 0.45rem;">
-          <i class="fa-brands fa-youtube"></i> GAMEFY_OFICIAL
+        <a href="https://www.youtube.com/@gamefyofc" target="_blank" style="flex: 1; min-width: 160px; text-decoration: none; text-align: center; background: #ff0000; color: #fff; padding: 0.65rem 1rem; border-radius: 10px; font-weight: 700; font-size: 0.85rem; display: flex; align-items: center; justify-content: center; gap: 0.45rem;">
+          <i class="fa-brands fa-youtube"></i> @gamefyofc
         </a>
       </div>
     `;
@@ -1689,7 +1981,7 @@ document.addEventListener('DOMContentLoaded', () => {
                       </div>
                     `;
                   } else if (item.media_url) {
-                    mediaContent = `<img src="${item.media_url}" alt="Post" loading="lazy" onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1542751371-adc38448a05e?w=300&auto=format&fit=crop&q=80'">`;
+                    mediaContent = `<img src="${item.media_url}" alt="Post" loading="lazy" style="width:100%;height:100%;object-fit:cover;">`;
                   } else {
                     mediaContent = `
                       <div style="width:100%;height:100%;background:rgba(255,255,255,0.03);display:flex;align-items:center;justify-content:center;padding:0.4rem;text-align:center;font-size:0.65rem;color:var(--text-muted);line-height:1.2;overflow:hidden;">
@@ -1747,13 +2039,161 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       });
 
+      // Renderizar canais adicionais (além das 3 conexões padrão)
+      const extraChannelsSection = document.getElementById('extraChannelsSection');
+      const extraChannelsGrid = document.getElementById('extraChannelsGrid');
+      const extraAccounts = data.accounts.filter(a => a.isExtraChannel || !['instagram', 'facebook', 'youtube', 'default_instagram', 'default_facebook', 'default_youtube'].includes(a.id));
+
+      if (extraChannelsSection && extraChannelsGrid) {
+        if (extraAccounts.length > 0) {
+          extraChannelsSection.style.display = 'block';
+          extraChannelsGrid.innerHTML = '';
+
+          extraAccounts.forEach(acc => {
+            const card = document.createElement('div');
+            card.className = `account-hub-card ${acc.platform === 'youtube' ? 'yt-card' : (acc.platform === 'instagram' ? 'ig-card' : 'fb-card')}`;
+
+            let iconClass = acc.platform === 'youtube' ? 'fa-brands fa-youtube' : (acc.platform === 'instagram' ? 'fa-brands fa-instagram' : 'fa-brands fa-facebook-f');
+            let brandColor = acc.platform === 'youtube' ? '#ff0000' : (acc.platform === 'instagram' ? '#e1306c' : '#1877f2');
+
+            card.innerHTML = `
+              <div class="card-brand-header">
+                <div class="brand-title-wrap">
+                  <span class="brand-icon-circle" style="background: ${brandColor}; color: #fff;"><i class="${iconClass}"></i></span>
+                  <span class="brand-title">${capitalize(acc.platform)}</span>
+                  <span class="extra-channel-badge">Canal Extra</span>
+                </div>
+                <div class="account-status-tag connected">
+                  <span class="status-dot-sm"></span> Ativo
+                </div>
+              </div>
+              <div class="card-profile-box">
+                <div class="avatar-ring connected" style="border-color: ${brandColor};">
+                  ${acc.avatar_url ? `<img src="${acc.avatar_url}" class="avatar-img" alt="${acc.account_name}">` : `<div class="avatar-placeholder"><i class="${iconClass}"></i></div>`}
+                </div>
+                <div class="card-user-info">
+                  <div class="card-account-name">${escapeHtml(acc.account_name || 'Canal Secundário')}</div>
+                  <div class="card-account-id">${escapeHtml(acc.account_id || 'ID Configurado')}</div>
+                  <span class="account-stats-badge" style="display: inline-flex;">Perfil Conectado</span>
+                </div>
+              </div>
+              <div class="card-actions-group" style="margin-top: 1rem;">
+                ${acc.profileUrl && acc.profileUrl !== '#' ? `
+                  <a href="${acc.profileUrl}" target="_blank" rel="noopener noreferrer" class="btn-card-action link" style="flex: 1; text-align: center;">
+                    <i class="fa-solid fa-arrow-up-right-from-square"></i> Abrir Canal
+                  </a>
+                ` : ''}
+                <button type="button" class="btn-card-sub danger" onclick="window.deleteExtraAccount('${acc.id}')" title="Remover este canal">
+                  <i class="fa-solid fa-trash-can"></i> Remover
+                </button>
+              </div>
+            `;
+            extraChannelsGrid.appendChild(card);
+          });
+        } else {
+          extraChannelsSection.style.display = 'none';
+        }
+      }
+
       if (activeAccountsBadge) {
-        activeAccountsBadge.textContent = `${connectedCount}/3`;
+        activeAccountsBadge.textContent = `${data.accounts.length} canais`;
       }
     } catch (err) {
       console.error('Erro ao carregar contas:', err);
     }
   }
+
+  // ==========================================
+  // MODAL CONECTAR CANAL / PERFIL EXTRA
+  // ==========================================
+  window.openAddAccountModal = function() {
+    const modal = document.getElementById('addAccountModal');
+    if (modal) modal.style.display = 'flex';
+  };
+
+  window.closeAddAccountModal = function() {
+    const modal = document.getElementById('addAccountModal');
+    if (modal) modal.style.display = 'none';
+  };
+
+  window.updateAddAccountFields = function(platform) {
+    const lblName = document.getElementById('lblNewAccName');
+    const inputName = document.getElementById('newAccName');
+    const lblId = document.getElementById('lblNewAccId');
+    const inputUrl = document.getElementById('newAccUrl');
+
+    if (platform === 'youtube') {
+      if (lblName) lblName.textContent = 'Nome do Canal YouTube *';
+      if (inputName) inputName.placeholder = 'Ex: GAMEFY Shorts & Cortes';
+      if (lblId) lblId.textContent = 'ID do Canal (ex: UC8rm4-cdDaD1DKodJdoT5ow)';
+      if (inputUrl) inputUrl.placeholder = 'Ex: https://www.youtube.com/@seucanal2';
+    } else if (platform === 'instagram') {
+      if (lblName) lblName.textContent = 'Nome do Perfil Instagram *';
+      if (inputName) inputName.placeholder = 'Ex: @gamefy_secundario';
+      if (lblId) lblId.textContent = 'ID da Conta Instagram (opcional)';
+      if (inputUrl) inputUrl.placeholder = 'Ex: https://www.instagram.com/gamefyofc';
+    } else {
+      if (lblName) lblName.textContent = 'Nome da Página Facebook *';
+      if (inputName) inputName.placeholder = 'Ex: Gamefy Notícias & Memes';
+      if (lblId) lblId.textContent = 'ID da Página Facebook (opcional)';
+      if (inputUrl) inputUrl.placeholder = 'Ex: https://www.facebook.com/1097087796819080';
+    }
+  };
+
+  window.handleAddAccountSubmit = async function(e) {
+    e.preventDefault();
+    const platform = document.getElementById('newAccPlatform')?.value;
+    const account_name = document.getElementById('newAccName')?.value;
+    const account_id = document.getElementById('newAccId')?.value;
+    const profile_url = document.getElementById('newAccUrl')?.value;
+    const access_token = document.getElementById('newAccToken')?.value;
+
+    const btnSubmit = document.getElementById('btnSubmitAddAccount');
+    if (btnSubmit) {
+      btnSubmit.disabled = true;
+      btnSubmit.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Conectando...';
+    }
+
+    try {
+      const res = await fetch('/api/accounts/add', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ platform, account_name, account_id, profile_url, access_token })
+      });
+      const data = await res.json();
+      if (data.success) {
+        showToast(`🎉 ${capitalize(platform)} "${account_name}" conectado com sucesso!`, 'success');
+        window.closeAddAccountModal();
+        document.getElementById('addAccountForm')?.reset();
+        await loadAccounts();
+      } else {
+        showToast(data.error || 'Erro ao conectar novo canal.', 'error');
+      }
+    } catch (err) {
+      showToast('Erro de comunicação: ' + err.message, 'error');
+    } finally {
+      if (btnSubmit) {
+        btnSubmit.disabled = false;
+        btnSubmit.innerHTML = '<i class="fa-solid fa-circle-check"></i> Salvar e Conectar';
+      }
+    }
+  };
+
+  window.deleteExtraAccount = async function(id) {
+    if (!confirm('Deseja realmente remover este canal secundário do aplicativo?')) return;
+    try {
+      const res = await fetch(`/api/accounts/${id}`, { method: 'DELETE' });
+      const data = await res.json();
+      if (data.success) {
+        showToast('Canal removido com sucesso.', 'info');
+        await loadAccounts();
+      } else {
+        showToast(data.error || 'Erro ao remover canal.', 'error');
+      }
+    } catch (err) {
+      showToast('Erro ao remover canal: ' + err.message, 'error');
+    }
+  };
 
   // Elementos do Modal de Login Rápido
   const fastLoginModal = document.getElementById('fastLoginModal');
@@ -1965,6 +2405,8 @@ document.addEventListener('DOMContentLoaded', () => {
       labelAccessToken.textContent = 'Meta Access Token (Token Oficial) *';
       helpAccessToken.textContent = 'Token de usuário ou página gerado no painel da Meta.';
       if (groupApiKey) groupApiKey.style.display = 'none';
+      if (groupRefreshToken) groupRefreshToken.style.display = 'none';
+      if (groupOAuthClient) groupOAuthClient.style.display = 'none';
     } else if (platform === 'facebook') {
       connectModalTitle.innerHTML = '<i class="fa-brands fa-facebook-f" style="color: #589bff;"></i> Conectar Página Real do Facebook';
       if (instructionsText) {
@@ -1980,22 +2422,28 @@ document.addEventListener('DOMContentLoaded', () => {
       labelAccessToken.textContent = 'Page Access Token *';
       helpAccessToken.textContent = 'Token da Página com permissão pages_manage_posts.';
       if (groupApiKey) groupApiKey.style.display = 'none';
+      if (groupRefreshToken) groupRefreshToken.style.display = 'none';
+      if (groupOAuthClient) groupOAuthClient.style.display = 'none';
     } else if (platform === 'youtube') {
-      connectModalTitle.innerHTML = '<i class="fa-brands fa-youtube" style="color: #ff4d4d;"></i> Conectar Canal Real do YouTube';
+      connectModalTitle.innerHTML = '<i class="fa-brands fa-youtube" style="color: #ff4d4d;"></i> Conectar Canal Real do YouTube (@gamefyofc)';
       if (instructionsText) {
-        instructionsText.textContent = 'Gere um token de autorização do Google no OAuth 2.0 Playground com o escopo https://www.googleapis.com/auth/youtube.upload.';
+        instructionsText.innerHTML = '<strong>🔥 Conexão Permanente:</strong> Para o token <u>não expirar a cada 1 hora</u>, no OAuth Playground clique na <strong>engrenagem ⚙️</strong> no topo direito e marque <strong>Access type: Offline</strong>. Ao gerar os tokens, copie o JSON ou o <strong>Refresh Token</strong> para que o sistema se auto-renove para sempre!';
       }
       if (guideLink) {
         guideLink.href = 'https://developers.google.com/oauthplayground/';
         guideLink.innerHTML = '<i class="fa-solid fa-arrow-up-right-from-square"></i> Abrir Google OAuth 2.0 Playground';
       }
-      labelAccountId.textContent = 'Channel ID do YouTube (Opcional se usar Token)';
-      inputAccountId.placeholder = 'Ex: UC_x5XG1OV2P6uZZ5FSM9Ttw';
+      labelAccountId.textContent = 'Channel ID do YouTube';
+      inputAccountId.placeholder = 'UC8rm4-cdDaD1DKodJdoT5ow';
+      inputAccountId.value = 'UC8rm4-cdDaD1DKodJdoT5ow';
       inputAccountId.required = false;
-      helpAccountId.textContent = 'ID do seu canal do YouTube (começa com UC...).';
-      labelAccessToken.textContent = 'OAuth Access Token do Google *';
-      helpAccessToken.textContent = 'Token gerado no Google Cloud ou OAuth Playground.';
+      helpAccountId.textContent = 'ID oficial do canal Gamefy (UC8rm4-cdDaD1DKodJdoT5ow).';
+      labelAccessToken.textContent = 'OAuth Access Token do Google (ya29... ou JSON) *';
+      inputAccessToken.placeholder = 'Cole o token ya29... ou o JSON retornado pelo Playground';
+      helpAccessToken.textContent = 'Se colar o JSON inteiro com refresh_token, o sistema extrai e salva tudo automaticamente!';
       if (groupApiKey) groupApiKey.style.display = 'block';
+      if (groupRefreshToken) groupRefreshToken.style.display = 'block';
+      if (groupOAuthClient) groupOAuthClient.style.display = 'block';
     }
 
     connectModal.style.display = 'flex';
@@ -2067,8 +2515,22 @@ document.addEventListener('DOMContentLoaded', () => {
       e.preventDefault();
       const platform = connectPlatform.value;
       const accountId = inputAccountId.value.trim();
-      const accessToken = inputAccessToken.value.trim();
-      const apiKey = inputApiKey ? inputApiKey.value.trim() : null;
+      let rawToken = inputAccessToken.value.trim();
+      let refreshTokenVal = inputRefreshToken ? inputRefreshToken.value.trim() : null;
+      let clientIdVal = inputClientId ? inputClientId.value.trim() : null;
+      let clientSecretVal = inputClientSecret ? inputClientSecret.value.trim() : null;
+      const apiKeyVal = inputApiKey ? inputApiKey.value.trim() : null;
+
+      if (rawToken.startsWith('{')) {
+        try {
+          const parsed = JSON.parse(rawToken);
+          if (parsed.access_token) rawToken = parsed.access_token;
+          if (parsed.refresh_token && !refreshTokenVal) {
+            refreshTokenVal = parsed.refresh_token;
+            if (inputRefreshToken) inputRefreshToken.value = parsed.refresh_token;
+          }
+        } catch (_) {}
+      }
 
       btnSaveCredentials.disabled = true;
       const origHtml = btnSaveCredentials.innerHTML;
@@ -2078,7 +2540,14 @@ document.addEventListener('DOMContentLoaded', () => {
         const res = await fetch(`/api/accounts/${platform}/connect`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ accountId, accessToken, apiKey })
+          body: JSON.stringify({ 
+            accountId, 
+            accessToken: rawToken, 
+            apiKey: apiKeyVal,
+            refreshToken: refreshTokenVal,
+            clientId: clientIdVal,
+            clientSecret: clientSecretVal
+          })
         });
 
         const data = await res.json();
@@ -2718,6 +3187,413 @@ document.addEventListener('DOMContentLoaded', () => {
   };
 
   // ===================================================
+  // FILA & MULTI-VÍDEOS (ATÉ 3 VÍDEOS ORGANIZADOS)
+  // ===================================================
+  const videoSlots = [
+    { id: 0, title: '', caption: '', file: null, fileUrl: null, thumbFile: null, thumbUrl: null, platforms: ['instagram','facebook','youtube'], isScheduled: false, scheduledAt: '', igFormat: 'auto', fbFormat: 'auto', ytFormat: 'auto', privacy: 'public', isConfigured: false },
+    { id: 1, title: '', caption: '', file: null, fileUrl: null, thumbFile: null, thumbUrl: null, platforms: ['instagram','facebook','youtube'], isScheduled: false, scheduledAt: '', igFormat: 'auto', fbFormat: 'auto', ytFormat: 'auto', privacy: 'public', isConfigured: false },
+    { id: 2, title: '', caption: '', file: null, fileUrl: null, thumbFile: null, thumbUrl: null, platforms: ['instagram','facebook','youtube'], isScheduled: false, scheduledAt: '', igFormat: 'auto', fbFormat: 'auto', ytFormat: 'auto', privacy: 'public', isConfigured: false }
+  ];
+  let currentSlot = 0;
+  let videoMode = 'single'; // 'single' ou 'batch'
+
+  function saveCurrentSlotState() {
+    const s = videoSlots[currentSlot];
+    if (!s) return;
+
+    s.title = postTitle ? postTitle.value : '';
+    s.caption = postCaption ? postCaption.value : '';
+    s.file = state.selectedFile || null;
+    s.fileUrl = state.selectedFileUrl || null;
+    s.thumbFile = state.selectedThumbnailFile || null;
+    s.thumbUrl = state.selectedThumbnailUrl || null;
+    s.platforms = Array.from(document.querySelectorAll('input[name="platform"]:checked')).map(i => i.value);
+    s.isScheduled = !!state.isScheduledMode;
+    s.scheduledAt = scheduleDateTime ? scheduleDateTime.value : '';
+    s.igFormat = state.igFormat || 'auto';
+    s.fbFormat = state.fbFormat || 'auto';
+    s.ytFormat = state.ytFormat || 'auto';
+    s.privacy = state.privacy || 'public';
+
+    if (s.file || s.caption.trim() || s.title.trim()) {
+      s.isConfigured = true;
+    }
+
+    updateSlotsUI();
+  }
+
+  function loadSlotIntoForm(index) {
+    const s = videoSlots[index];
+    if (!s) return;
+
+    if (postTitle) postTitle.value = s.title || '';
+    if (postCaption) postCaption.value = s.caption || '';
+    if (charCounter) charCounter.textContent = `${(s.caption || '').length} caracteres`;
+
+    // Mídia
+    if (s.file) {
+      handleFileSelection(s.file);
+    } else {
+      state.selectedFile = null;
+      state.selectedFileUrl = null;
+      if (dropzoneEmpty) dropzoneEmpty.style.display = 'block';
+      if (mediaPreviewWrapper) mediaPreviewWrapper.style.display = 'none';
+      if (mediaPreviewContainer) mediaPreviewContainer.innerHTML = '';
+      if (mediaInput) mediaInput.value = '';
+      updateMockupMedia();
+    }
+
+    // Thumbnail
+    if (s.thumbFile) {
+      state.selectedThumbnailFile = s.thumbFile;
+      state.selectedThumbnailUrl = URL.createObjectURL(s.thumbFile);
+      if (thumbnailDropzoneEmpty) thumbnailDropzoneEmpty.style.display = 'none';
+      if (thumbnailPreviewWrapper) thumbnailPreviewWrapper.style.display = 'flex';
+      if (thumbnailImgPreview) thumbnailImgPreview.src = state.selectedThumbnailUrl;
+    } else {
+      state.selectedThumbnailFile = null;
+      state.selectedThumbnailUrl = null;
+      if (thumbnailDropzoneEmpty) thumbnailDropzoneEmpty.style.display = 'block';
+      if (thumbnailPreviewWrapper) thumbnailPreviewWrapper.style.display = 'none';
+      if (thumbnailImgPreview) thumbnailImgPreview.src = '';
+      if (thumbnailInput) thumbnailInput.value = '';
+    }
+
+    // Plataformas
+    document.querySelectorAll('.platform-pill').forEach(pill => {
+      const cb = pill.querySelector('input[type="checkbox"]');
+      if (cb) {
+        const checked = s.platforms ? s.platforms.includes(cb.value) : true;
+        cb.checked = checked;
+        pill.classList.toggle('active', checked);
+      }
+    });
+    updateFormatVisibility();
+    updateVisiblePreviewCards();
+
+    // Agendamento
+    if (s.isScheduled) {
+      if (modeScheduled) modeScheduled.click();
+      if (scheduleDateTime && s.scheduledAt) scheduleDateTime.value = s.scheduledAt;
+    } else {
+      if (modeDirect) modeDirect.click();
+    }
+
+    // Formatos e visibilidade
+    state.igFormat = s.igFormat || 'auto';
+    state.fbFormat = s.fbFormat || 'auto';
+    state.ytFormat = s.ytFormat || 'auto';
+    state.privacy = s.privacy || 'public';
+
+    if (postTitle) postTitle.dispatchEvent(new Event('input'));
+    if (postCaption) postCaption.dispatchEvent(new Event('input'));
+
+    updateSlotsUI();
+  }
+
+  function updateSlotsUI() {
+    for (let i = 0; i < 3; i++) {
+      const btn = document.getElementById(`slotBtn${i}`);
+      const lbl = document.getElementById(`slotLabel${i}`);
+      const icon = document.getElementById(`slotIcon${i}`);
+      const s = videoSlots[i];
+
+      if (!btn) continue;
+      btn.classList.toggle('active', currentSlot === i);
+
+      if (s.isConfigured) {
+        btn.classList.add('configured');
+        const shortTitle = s.title ? (s.title.length > 12 ? s.title.substring(0, 10) + '...' : s.title) : `Vídeo ${i + 1}`;
+        if (lbl) lbl.textContent = shortTitle;
+        if (icon) icon.innerHTML = '<i class="fa-solid fa-circle-check" style="color: #10b981;"></i>';
+      } else {
+        btn.classList.remove('configured');
+        if (lbl) lbl.textContent = (currentSlot === i) ? `Vídeo ${i + 1}` : `+ Vídeo ${i + 1}`;
+        if (icon) icon.innerHTML = (currentSlot === i) ? '<i class="fa-solid fa-pen"></i>' : '<i class="fa-solid fa-plus"></i>';
+      }
+    }
+
+    const statusText = document.getElementById('multiVideoStatusText');
+    if (statusText) {
+      const isCurConfigured = videoSlots[currentSlot].isConfigured;
+      statusText.textContent = `Vídeo ${currentSlot + 1} (${isCurConfigured ? 'Pronto' : 'Em edição'})`;
+    }
+
+    const configuredCount = videoSlots.filter(s => s.isConfigured).length;
+    if (submitBtnText) {
+      if (videoMode === 'batch' && configuredCount > 1) {
+        submitBtnText.textContent = state.isScheduledMode ? `Agendar ${configuredCount} Vídeos da Fila` : `Publicar ${configuredCount} Vídeos em Lote`;
+      } else {
+        submitBtnText.textContent = state.isScheduledMode ? 'Agendar Publicação' : 'Publicar Agora';
+      }
+    }
+  }
+
+  window.setMultiVideoMode = function(mode) {
+    videoMode = mode;
+    const pillSingle = document.getElementById('pillSingleMode');
+    const pillBatch = document.getElementById('pillBatchMode');
+    if (pillSingle) pillSingle.classList.toggle('active', mode === 'single');
+    if (pillBatch) pillBatch.classList.toggle('active', mode === 'batch');
+    updateSlotsUI();
+    if (mode === 'batch') {
+      showToast('⚡ Modo Lote ativado: você pode preparar até 3 vídeos com horários diferentes e postar juntos!', 'info');
+    }
+  };
+
+  window.selectVideoSlot = function(index) {
+    if (index === currentSlot) return;
+    saveCurrentSlotState();
+    currentSlot = index;
+    loadSlotIntoForm(index);
+  };
+
+  window.saveAndGoToNextSlot = function() {
+    saveCurrentSlotState();
+    videoSlots[currentSlot].isConfigured = true;
+    updateSlotsUI();
+
+    if (currentSlot < 2) {
+      const nextIndex = currentSlot + 1;
+      window.setMultiVideoMode('batch');
+      window.selectVideoSlot(nextIndex);
+      showToast(`💾 Vídeo ${currentSlot} salvo no rascunho! Agora você pode preparar o Vídeo ${nextIndex + 1}.`, 'success');
+    } else {
+      showToast('🎉 Todos os 3 vídeos foram configurados na fila! Pronto para publicar.', 'success');
+    }
+  };
+
+  // ===================================================
+  // AGENDA & HORÁRIOS DE PICO GAMER (@gamefyofc)
+  // ===================================================
+  let calCurrentYear = new Date().getFullYear();
+  let calCurrentMonth = new Date().getMonth(); // 0-11
+  let calSelectedDate = new Date().toISOString().split('T')[0];
+  let cachedCalendarPosts = [];
+
+  const MONTH_NAMES = [
+    'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
+    'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
+  ];
+
+  async function loadScheduleView() {
+    try {
+      const res = await fetch('/api/posts');
+      const data = await res.json();
+      if (data.success && data.posts) {
+        cachedCalendarPosts = data.posts;
+      }
+    } catch (_) {}
+
+    renderCalendar();
+    renderSelectedDaySchedule();
+  }
+
+  function renderCalendar() {
+    const titleElem = document.getElementById('calendarMonthTitle');
+    const gridElem = document.getElementById('calendarDaysGrid');
+    if (!gridElem) return;
+
+    if (titleElem) {
+      titleElem.textContent = `${MONTH_NAMES[calCurrentMonth]} ${calCurrentYear}`;
+    }
+
+    gridElem.innerHTML = '';
+
+    const firstDayIndex = new Date(calCurrentYear, calCurrentMonth, 1).getDay();
+    const lastDate = new Date(calCurrentYear, calCurrentMonth + 1, 0).getDate();
+    const prevMonthLastDate = new Date(calCurrentYear, calCurrentMonth, 0).getDate();
+    const todayStr = new Date().toISOString().split('T')[0];
+
+    // Dias do mês anterior
+    for (let x = firstDayIndex; x > 0; x--) {
+      const dayNum = prevMonthLastDate - x + 1;
+      const cell = document.createElement('div');
+      cell.className = 'calendar-day-cell other-month';
+      cell.innerHTML = `<span class="day-number">${dayNum}</span>`;
+      gridElem.appendChild(cell);
+    }
+
+    // Dias do mês atual
+    for (let day = 1; day <= lastDate; day++) {
+      const dateStr = `${calCurrentYear}-${String(calCurrentMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+      const cell = document.createElement('div');
+      cell.className = 'calendar-day-cell';
+
+      if (dateStr === todayStr) cell.classList.add('today');
+      if (dateStr === calSelectedDate) cell.classList.add('selected');
+
+      const dayPosts = cachedCalendarPosts.filter(p => {
+        const postDate = (p.scheduled_at || p.published_at || p.created_at || '').split('T')[0];
+        return postDate === dateStr;
+      });
+
+      let dotsHtml = '';
+      if (dayPosts.length > 0) {
+        cell.classList.add('has-posts');
+        const count = dayPosts.length;
+        dotsHtml = `
+          <div class="day-posts-dots">
+            <span class="day-dot" style="background: #10b981;" title="${count} post(s)"></span>
+            ${count > 1 ? `<span class="day-posts-count">${count}</span>` : ''}
+          </div>
+        `;
+      }
+
+      cell.innerHTML = `
+        <span class="day-number">${day}</span>
+        ${dotsHtml}
+      `;
+
+      cell.addEventListener('click', () => {
+        calSelectedDate = dateStr;
+        renderCalendar();
+        renderSelectedDaySchedule();
+      });
+
+      gridElem.appendChild(cell);
+    }
+  }
+
+  function renderSelectedDaySchedule() {
+    const listElem = document.getElementById('calDayScheduleList');
+    const textElem = document.getElementById('calSelectedDateText');
+    const badgeElem = document.getElementById('calDayPostsCountBadge');
+    if (!listElem) return;
+
+    const parts = calSelectedDate.split('-');
+    const formattedDate = `${parts[2]}/${parts[1]}/${parts[0]}`;
+    if (textElem) {
+      const todayStr = new Date().toISOString().split('T')[0];
+      textElem.textContent = (calSelectedDate === todayStr) ? `Hoje (${formattedDate})` : formattedDate;
+    }
+
+    const dayPosts = cachedCalendarPosts.filter(p => {
+      const postDate = (p.scheduled_at || p.published_at || p.created_at || '').split('T')[0];
+      return postDate === calSelectedDate;
+    });
+
+    if (badgeElem) badgeElem.textContent = `${dayPosts.length} vídeo(s)`;
+
+    const peakSlots = [
+      { time: '12:00', title: '1º Pico: 12:00 (Almoço Gamer)', icon: '☀️', desc: 'Shorts rápidos e novidades' },
+      { time: '18:30', title: '2º Pico: 18:30 (Fim de Tarde)', icon: '🌇', desc: 'Maior engajamento feed e YouTube' },
+      { time: '21:15', title: '3º Pico: 21:15 (Prime Time Noturno)', icon: '🌙', desc: 'Gameplays completas e retenção máxima' }
+    ];
+
+    listElem.innerHTML = '';
+
+    peakSlots.forEach((slot, idx) => {
+      const matchedPost = dayPosts.find(p => {
+        const timePart = (p.scheduled_at || '').slice(11, 16);
+        return timePart === slot.time || Math.abs(idx - dayPosts.indexOf(p)) === 0;
+      });
+
+      const slotCard = document.createElement('div');
+      slotCard.className = 'peak-time-card';
+      slotCard.style.padding = '0.75rem 1rem';
+
+      if (matchedPost) {
+        slotCard.innerHTML = `
+          <div class="peak-time-desc">
+            <strong style="color: #6ee7b7; font-size: 0.9rem;">${slot.icon} ${slot.title} - Agendado</strong>
+            <span style="color: #f1f5f9; font-weight: 600;">${escapeHtml(matchedPost.title || matchedPost.caption?.substring(0, 45) || 'Vídeo programado')}</span>
+            <span style="font-size: 0.75rem; color: #94a3b8;">Redes: ${(matchedPost.platforms || []).join(', ')}</span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 0.5rem;">
+            <span class="peak-time-badge" style="background: rgba(16, 185, 129, 0.2); color: #6ee7b7; border-color: rgba(16, 185, 129, 0.4);">${slot.time}</span>
+            <button type="button" class="btn-group-icon danger" onclick="window.openDeleteModal(${matchedPost.id}, '${escapeHtml(matchedPost.title || '')}', '${(matchedPost.platforms || []).join(',')}', false)" title="Excluir">
+              <i class="fa-solid fa-trash-can"></i>
+            </button>
+          </div>
+        `;
+      } else {
+        slotCard.innerHTML = `
+          <div class="peak-time-desc">
+            <strong style="font-size: 0.9rem;">${slot.icon} ${slot.title}</strong>
+            <span>${slot.desc} (Horário Livre)</span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 0.5rem;">
+            <span class="peak-time-badge">${slot.time}</span>
+            <button type="button" class="btn-card-action" onclick="window.scheduleForPeakTime('${slot.time}', ${idx})" style="padding: 0.35rem 0.7rem; font-size: 0.75rem; background: rgba(59, 130, 246, 0.15); color: #60a5fa; border-color: rgba(59, 130, 246, 0.3);">
+              <i class="fa-solid fa-plus"></i> Agendar
+            </button>
+          </div>
+        `;
+      }
+      listElem.appendChild(slotCard);
+    });
+  }
+
+  window.scheduleForPeakTime = function(time, slotIndex = 0) {
+    const targetIso = `${calSelectedDate}T${time}`;
+    window.selectVideoSlot(slotIndex);
+
+    if (modeScheduled) modeScheduled.click();
+    if (scheduleDateTime) scheduleDateTime.value = targetIso;
+
+    saveCurrentSlotState();
+    window.switchView('composer-view');
+
+    showToast(`⏰ Horário das ${time} do dia ${calSelectedDate} selecionado para o Vídeo ${slotIndex + 1}!`, 'success');
+  };
+
+  window.applyPeakTimesToComposer = function() {
+    window.setMultiVideoMode('batch');
+
+    const peakTimes = ['12:00', '18:30', '21:15'];
+    peakTimes.forEach((time, i) => {
+      videoSlots[i].isScheduled = true;
+      videoSlots[i].scheduledAt = `${calSelectedDate}T${time}`;
+      if (!videoSlots[i].title) videoSlots[i].title = `Vídeo ${i + 1} (${time})`;
+    });
+
+    currentSlot = 0;
+    loadSlotIntoForm(0);
+    window.switchView('composer-view');
+
+    showToast(`🎯 Os 3 Horários de Pico (12:00, 18:30 e 21:15) foram distribuídos nos 3 slots da fila para ${calSelectedDate}!`, 'success');
+  };
+
+  // Botões de navegação de mês
+  const btnCalPrevMonth = document.getElementById('btnCalPrevMonth');
+  const btnCalNextMonth = document.getElementById('btnCalNextMonth');
+  const btnCalToday = document.getElementById('btnCalToday');
+
+  if (btnCalPrevMonth) {
+    btnCalPrevMonth.addEventListener('click', () => {
+      calCurrentMonth--;
+      if (calCurrentMonth < 0) {
+        calCurrentMonth = 11;
+        calCurrentYear--;
+      }
+      renderCalendar();
+    });
+  }
+
+  if (btnCalNextMonth) {
+    btnCalNextMonth.addEventListener('click', () => {
+      calCurrentMonth++;
+      if (calCurrentMonth > 11) {
+        calCurrentMonth = 0;
+        calCurrentYear++;
+      }
+      renderCalendar();
+    });
+  }
+
+  if (btnCalToday) {
+    btnCalToday.addEventListener('click', () => {
+      const now = new Date();
+      calCurrentYear = now.getFullYear();
+      calCurrentMonth = now.getMonth();
+      calSelectedDate = now.toISOString().split('T')[0];
+      renderCalendar();
+      renderSelectedDaySchedule();
+    });
+  }
+
+  // ===================================================
   // PAINEL DE ADMINISTRAÇÃO & USUÁRIOS
   // ===================================================
   async function loadAdminUsers() {
@@ -2888,6 +3764,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const createModal = document.getElementById('createUserModal');
     if (createModal && e.target === createModal) {
       createModal.style.display = 'none';
+    }
+    const addAccModal = document.getElementById('addAccountModal');
+    if (addAccModal && e.target === addAccModal) {
+      addAccModal.style.display = 'none';
+    }
+    const delModal = document.getElementById('deletePostModal');
+    if (delModal && e.target === delModal) {
+      delModal.style.display = 'none';
     }
   });
 });

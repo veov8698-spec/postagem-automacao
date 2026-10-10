@@ -5,6 +5,17 @@ const FormData = require('form-data');
 const { db } = require('../database/connection');
 require('dotenv').config();
 
+let refreshYouTubeTokenHelper = null;
+function getYouTubeRefreshHelper() {
+  if (!refreshYouTubeTokenHelper) {
+    try {
+      const accountsModule = require('../routes/accounts');
+      refreshYouTubeTokenHelper = accountsModule.refreshYouTubeTokenHelper;
+    } catch (_) {}
+  }
+  return refreshYouTubeTokenHelper;
+}
+
 class PublisherService {
   /**
    * Publica nas plataformas selecionadas com rastreamento completo de visibilidade e links oficiais.
@@ -124,8 +135,25 @@ class PublisherService {
       const isLocalPath = mediaUrl && (mediaUrl.startsWith('/uploads') || mediaUrl.startsWith('uploads'));
 
       if (isLocalPath) {
-        const publicAppUrl = process.env.PUBLIC_APP_URL || process.env.APP_URL || 'http://localhost:3000';
+        const publicAppUrl = post.currentOrigin || post.requestOrigin || process.env.PUBLIC_APP_URL || process.env.APP_URL || 'http://localhost:3000';
         resolvedMediaUrl = `${publicAppUrl.replace(/\/+$/, '')}/${mediaUrl.replace(/^\/+/, '')}`;
+        console.log(`[Instagram] URL pública resolvida para a Meta baixar a mídia: ${resolvedMediaUrl}`);
+      }
+
+      const isVideo = mediaType === 'video';
+
+      // Validação obrigatória: o Instagram NÃO aceita publicações sem foto ou vídeo
+      if (!resolvedMediaUrl || mediaType === 'none') {
+        return {
+          success: false,
+          platform: 'instagram',
+          status: 'failed',
+          visibility: 'unknown',
+          error: 'O Instagram exige que você selecione uma foto ou vídeo para publicar (não aceita publicação apenas com texto).',
+          diagnostics: 'Tentativa de postagem sem mídia em plataforma visual.',
+          accountName: accLabel,
+          publicUrl: 'https://www.instagram.com/gamefyofc'
+        };
       }
 
       // 2. Criar Container de Mídia na Meta Graph API
@@ -134,8 +162,6 @@ class PublisherService {
         caption: post.caption || '',
         access_token: token
       };
-
-      const isVideo = mediaType === 'video';
 
       if (igFormat === 'story') {
         containerParams.media_type = 'STORIES';
@@ -147,21 +173,24 @@ class PublisherService {
       } else if (igFormat === 'reels' || (isVideo && igFormat !== 'feed')) {
         containerParams.media_type = 'REELS';
         containerParams.video_url = resolvedMediaUrl;
-      } else if (mediaType === 'image') {
+      } else if (mediaType === 'image' || resolvedMediaUrl) {
         containerParams.image_url = resolvedMediaUrl;
       }
 
       console.log(`[Instagram] Criando container de mídia (${igFormat.toUpperCase()})...`);
       const containerRes = await axios.post(containerUrl, null, {
         params: containerParams,
-        timeout: 20000
+        timeout: 25000
       });
-      const creationId = containerRes.data.id;
+      const creationId = containerRes.data?.id;
 
-      // 3. Se for Vídeo/Reels, é MANDATÓRIO aguardar o status_code === 'FINISHED'
-      // Caso contrário, chamar media_publish prematuramente causa falha ou vídeo invisível
+      if (!creationId) {
+        throw new Error('Falha ao obter ID do container de mídia da Meta Graph API.');
+      }
+
+      // 3. Aguardar o processamento da Meta (Download e Transcodificação)
       if (isVideo) {
-        console.log(`[Instagram] Aguardando transcodificação da Meta para o container ${creationId}...`);
+        console.log(`[Instagram] Aguardando transcodificação da Meta para o vídeo container ${creationId}...`);
         let finished = false;
         let attempts = 0;
         const maxAttempts = 15; // até 45 segundos
@@ -192,20 +221,65 @@ class PublisherService {
             console.warn(`[Instagram Polling Warning] ${pollErr.message}`);
           }
         }
+      } else {
+        // Para Imagem: aguarda a Meta concluir o download da URL antes de publicar
+        console.log(`[Instagram] Aguardando confirmação da imagem no container ${creationId}...`);
+        let imageReady = false;
+        let imgAttempts = 0;
+        while (!imageReady && imgAttempts < 5) {
+          await new Promise(r => setTimeout(r, 2000));
+          imgAttempts++;
+          try {
+            const checkImg = await axios.get(`https://graph.facebook.com/v19.0/${creationId}`, {
+              params: { fields: 'status_code,status', access_token: token },
+              timeout: 10000
+            });
+            const st = checkImg.data?.status_code;
+            if (st === 'FINISHED' || !st) {
+              imageReady = true;
+            } else if (st === 'ERROR') {
+              throw new Error(`A Meta não conseguiu acessar a imagem via internet: ${checkImg.data?.status || 'Download falhou'}`);
+            }
+          } catch (_) {
+            if (imgAttempts >= 3) imageReady = true;
+          }
+        }
       }
 
-      // 4. Publicar Container Oficialmente
+      // 4. Publicar Container Oficialmente com retry resiliente
       console.log(`[Instagram] Publicando container ${creationId}...`);
       const publishUrl = `https://graph.facebook.com/v19.0/${igUserId}/media_publish`;
-      const publishRes = await axios.post(publishUrl, null, {
-        params: {
-          creation_id: creationId,
-          access_token: token
-        },
-        timeout: 20000
-      });
+      let publishedPostId = null;
+      let pubAttempts = 0;
+      let lastPubError = null;
 
-      const publishedPostId = publishRes.data.id;
+      while (!publishedPostId && pubAttempts < 3) {
+        pubAttempts++;
+        try {
+          const publishRes = await axios.post(publishUrl, null, {
+            params: {
+              creation_id: creationId,
+              access_token: token
+            },
+            timeout: 25000
+          });
+          publishedPostId = publishRes.data?.id;
+        } catch (pubErr) {
+          lastPubError = pubErr;
+          const pubErrMsg = pubErr.response?.data?.error?.message || pubErr.message;
+          console.warn(`[Instagram Publish Attempt ${pubAttempts}/3] ${pubErrMsg}`);
+          if (pubErrMsg.includes('not available') || pubErrMsg.includes('Media ID is not available') || pubErrMsg.includes('Please wait')) {
+            // A Meta ainda está baixando a mídia, aguarda 3 segundos e tenta de novo
+            await new Promise(r => setTimeout(r, 3500));
+          } else {
+            throw pubErr;
+          }
+        }
+      }
+
+      if (!publishedPostId && lastPubError) {
+        throw lastPubError;
+      }
 
       // 5. Obter Link Permanente (permalink) e validar visibilidade
       let publicUrl = 'https://www.instagram.com/gamefyofc';
@@ -379,11 +453,14 @@ class PublisherService {
             finalPostId = finishRes.data.id || videoId;
             publicUrl = `https://www.facebook.com/reel/${finalPostId}`;
           } else {
-            // Vídeo normal no Feed com privacidade pública explícita
+            // Mapeamento dinâmico de privacidade no Facebook
+            const reqPrivacy = (post.privacy || 'public').toLowerCase();
+            const fbPrivacyValue = reqPrivacy === 'private' ? 'SELF' : 'EVERYONE';
+
             const form = new FormData();
             form.append('description', post.caption || '');
             form.append('access_token', token);
-            form.append('privacy', JSON.stringify({ value: 'EVERYONE' }));
+            form.append('privacy', JSON.stringify({ value: fbPrivacyValue }));
             form.append('source', fs.createReadStream(localPath), {
               filename: path.basename(localPath),
               contentType: 'video/mp4'
@@ -399,9 +476,12 @@ class PublisherService {
       }
       // 3. Post de Texto puro
       else {
+        const reqPrivacy = (post.privacy || 'public').toLowerCase();
+        const fbPrivacyValue = reqPrivacy === 'private' ? 'SELF' : 'EVERYONE';
+
         const res = await axios.post(`https://graph.facebook.com/v19.0/${targetId}/feed`, {
           message: post.caption || '',
-          privacy: { value: 'EVERYONE' },
+          privacy: { value: fbPrivacyValue },
           access_token: token
         }, { timeout: 15000 });
         finalPostId = res.data.id;
@@ -477,7 +557,7 @@ class PublisherService {
   // =========================================================================
   // YOUTUBE: SHORTS & VÍDEOS COM VALIDAÇÃO DE PRIVACIDADE E URL DIRETA
   // =========================================================================
-  async publishToYouTube(post) {
+  async publishToYouTube(post, isRetry = false) {
     const savedAccount = await db.getAccount('youtube');
     const token = savedAccount?.access_token || process.env.YOUTUBE_ACCESS_TOKEN;
     const accLabel = savedAccount?.account_name || 'GAMEFY_OFICIAL';
@@ -495,7 +575,7 @@ class PublisherService {
         postId: `yt_sim_${Date.now()}`,
         simulated: true,
         accountName: accLabel,
-        publicUrl: 'https://www.youtube.com/@GAMEFY_OFICIAL',
+        publicUrl: 'https://www.youtube.com/@gamefyofc',
         message: `Vídeo publicado com sucesso no canal ${accLabel} (Simulação)`
       };
     }
@@ -506,68 +586,260 @@ class PublisherService {
       title = `${title} #Shorts`;
     }
 
-    try {
-      const res = await axios.post(
-        'https://www.googleapis.com/youtube/v3/videos?part=snippet,status',
-        {
-          snippet: {
-            title,
-            description: post.caption || '',
-            categoryId: '20' // Jogos / Games
-          },
-          status: {
-            privacyStatus: 'public',
-            selfDeclaredMadeForKids: false
-          }
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          },
-          timeout: 25000
-        }
-      );
+    // Mapeamento dinâmico de privacidade escolhida pelo usuário (public, private, unlisted)
+    const reqPrivacy = (post.privacy || 'public').toLowerCase();
+    const ytPrivacy = ['public', 'private', 'unlisted'].includes(reqPrivacy) ? reqPrivacy : 'public';
 
-      const videoId = res.data.id;
+    // Localizar arquivo local se existir
+    const mediaPath = post.media_url || post.mediaUrl;
+    let localFilePath = null;
+    let fileStat = null;
+    if (mediaPath && typeof mediaPath === 'string') {
+      const cleanRelative = mediaPath.replace(/^\//, '');
+      const possiblePath = path.join(__dirname, '..', cleanRelative);
+      if (fs.existsSync(possiblePath)) {
+        localFilePath = possiblePath;
+        try {
+          fileStat = fs.statSync(possiblePath);
+        } catch (_) {}
+      }
+    }
+
+    try {
+      let videoId = null;
+
+      // 1. Se houver arquivo de vídeo local e tamanho válido, faz Upload Resumable oficial no YouTube
+      if (localFilePath && fileStat && fileStat.size > 0) {
+        console.log(`[YouTube] Iniciando upload resumable do arquivo (${fileStat.size} bytes)...`);
+        const initRes = await axios.post(
+          'https://www.googleapis.com/upload/youtube/v3/videos?uploadType=resumable&part=snippet,status',
+          {
+            snippet: {
+              title,
+              description: post.caption || '',
+              categoryId: '20' // Jogos / Games
+            },
+            status: {
+              privacyStatus: ytPrivacy,
+              selfDeclaredMadeForKids: false
+            }
+          },
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              'Content-Type': 'application/json; charset=UTF-8',
+              'X-Upload-Content-Type': 'video/mp4',
+              'X-Upload-Content-Length': fileStat.size.toString()
+            },
+            timeout: 25000
+          }
+        );
+
+        const uploadLocation = initRes.headers['location'];
+        if (uploadLocation) {
+          console.log('[YouTube] Enviando binário do vídeo para Google Cloud...');
+          const fileStream = fs.createReadStream(localFilePath);
+          const uploadRes = await axios.put(uploadLocation, fileStream, {
+            headers: {
+              'Content-Type': 'video/mp4',
+              'Content-Length': fileStat.size.toString()
+            },
+            maxContentLength: Infinity,
+            maxBodyLength: Infinity,
+            timeout: 120000
+          });
+          videoId = uploadRes.data?.id;
+        }
+      } else {
+        // 2. Sem arquivo de mídia binária: registrar vídeo via metadata
+        const res = await axios.post(
+          'https://www.googleapis.com/youtube/v3/videos?part=snippet,status',
+          {
+            snippet: {
+              title,
+              description: post.caption || '',
+              categoryId: '20'
+            },
+            status: {
+              privacyStatus: ytPrivacy,
+              selfDeclaredMadeForKids: false
+            }
+          },
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            },
+            timeout: 25000
+          }
+        );
+        videoId = res.data?.id;
+      }
+
+      if (!videoId) {
+        throw new Error('A API do Google não retornou o identificador do vídeo.');
+      }
+
       const publicUrl = isShorts 
         ? `https://www.youtube.com/shorts/${videoId}` 
         : `https://www.youtube.com/watch?v=${videoId}`;
 
-      // Diagnóstico de visibilidade real no YouTube
-      const actualPrivacy = res.data.status?.privacyStatus || 'public';
-      const isActuallyPublic = actualPrivacy === 'public';
-
       return {
         success: true,
         platform: 'youtube',
-        status: isActuallyPublic ? 'published' : 'published_with_restrictions',
-        visibility: actualPrivacy,
+        status: 'published',
+        visibility: ytPrivacy,
         postId: videoId,
         publicUrl,
         accountName: accLabel,
-        diagnostics: !isActuallyPublic 
-          ? 'Atenção: O Google Cloud marcou o vídeo como privado. Isso ocorre quando o projeto OAuth está no modo "Testing" ao invés de "In Production".'
-          : 'Vídeo publicado publicamente no canal.',
+        diagnostics: `Vídeo publicado oficialmente com privacidade ${ytPrivacy.toUpperCase()}.`,
         message: `Vídeo enviado com sucesso para o canal ${accLabel}!`
       };
     } catch (apiErr) {
       const errMsg = apiErr.response?.data?.error?.message || apiErr.message;
       console.warn(`[YouTube Publish Warning] ${errMsg}`);
 
+      const isQuota = errMsg.includes('quota') || errMsg.includes('Quota') || apiErr.response?.status === 403;
+      const isToken = errMsg.includes('token') || errMsg.includes('Token') || errMsg.includes('authentication') || errMsg.includes('credentials') || apiErr.response?.status === 401;
+
+      if (isToken) {
+        // Tentar auto-renovação de longa duração silenciosa se houver Refresh Token
+        if (!isRetry) {
+          const helper = getYouTubeRefreshHelper();
+          if (helper) {
+            console.log('[YouTube Auto-Refresh] Tentando auto-renovação de longa duração via Refresh Token...');
+            try {
+              const refreshed = await helper();
+              if (refreshed && refreshed.success && refreshed.accessToken) {
+                console.log('✅ [YouTube Auto-Refresh] Token renovado! Repetindo publicação com novo token...');
+                return await this.publishToYouTube(post, true);
+              }
+            } catch (rErr) {
+              console.warn('[YouTube Auto-Refresh Warning] Falha na auto-renovação:', rErr.message);
+            }
+          }
+        }
+
+        return {
+          success: false,
+          platform: 'youtube',
+          status: 'failed',
+          tokenExpired: true,
+          error: 'O Token do Google/YouTube expirou. Renove seu token em Contas Conectadas (ou use o Refresh Token para conexão permanente).',
+          diagnostics: `Erro Google OAuth: ${errMsg}`,
+          accountName: accLabel,
+          publicUrl: 'https://www.youtube.com/@gamefyofc'
+        };
+      }
+
+      if (isQuota) {
+        return {
+          success: false,
+          platform: 'youtube',
+          status: 'failed',
+          quotaExceeded: true,
+          error: 'A cota diária de envio da API do YouTube do Google Cloud foi atingida temporariamente.',
+          diagnostics: `Erro Google Quota: ${errMsg}`,
+          accountName: accLabel,
+          publicUrl: 'https://www.youtube.com/@gamefyofc'
+        };
+      }
+
       return {
-        success: true,
+        success: false,
         platform: 'youtube',
-        status: 'published_with_restrictions',
-        visibility: 'restricted',
-        postId: `yt_fallback_${Date.now()}`,
-        simulated: true,
+        status: 'failed',
+        error: `Erro ao publicar no YouTube: ${errMsg}`,
+        diagnostics: `Aviso Google: ${errMsg}`,
         accountName: accLabel,
-        publicUrl: 'https://www.youtube.com/@GAMEFY_OFICIAL',
-        diagnostics: `Aviso Google: ${errMsg}. Verifique a expiração do token OAuth ou status da cota.`,
-        message: `Publicação salva para o canal ${accLabel}.`
+        publicUrl: 'https://www.youtube.com/@gamefyofc'
       };
     }
+  }
+
+  // =========================================================================
+  // EXCLUSÃO DE CONTEÚDO DIRETO NAS REDES (YOUTUBE, INSTAGRAM, FACEBOOK)
+  // =========================================================================
+  async deleteFromYouTube(videoId) {
+    if (!videoId || videoId.startsWith('yt_sim_') || videoId.startsWith('yt_')) return { success: true, simulated: true };
+    const savedAccount = await db.getAccount('youtube');
+    let token = savedAccount?.access_token || process.env.YOUTUBE_ACCESS_TOKEN;
+
+    try {
+      await axios.delete(`https://www.googleapis.com/youtube/v3/videos?id=${videoId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      console.log(`✅ [YouTube Delete] Vídeo ${videoId} removido do canal oficial!`);
+      return { success: true, platform: 'youtube', videoId };
+    } catch (err) {
+      if (err.response?.status === 401) {
+        const helper = getYouTubeRefreshHelper();
+        if (helper) {
+          const ref = await helper();
+          if (ref && ref.success && ref.accessToken) {
+            try {
+              await axios.delete(`https://www.googleapis.com/youtube/v3/videos?id=${videoId}`, {
+                headers: { Authorization: `Bearer ${ref.accessToken}` }
+              });
+              console.log(`✅ [YouTube Delete] Vídeo ${videoId} removido após auto-renovação!`);
+              return { success: true, platform: 'youtube', videoId };
+            } catch (_) {}
+          }
+        }
+      }
+      const errMsg = err.response?.data?.error?.message || err.message;
+      console.warn(`[YouTube Delete Warning] Falha ao deletar vídeo ${videoId}:`, errMsg);
+      return { success: false, platform: 'youtube', error: errMsg };
+    }
+  }
+
+  async deleteFromMeta(postId, platform = 'facebook') {
+    if (!postId || postId.startsWith('fb_sim_') || postId.startsWith('ig_gamefy_')) return { success: true, simulated: true };
+    const savedAccount = await db.getAccount(platform);
+    const token = savedAccount?.access_token || (platform === 'facebook' ? process.env.FB_PAGE_TOKEN : process.env.IG_PAGE_TOKEN) || process.env.META_ACCESS_TOKEN;
+
+    try {
+      await axios.delete(`https://graph.facebook.com/v19.0/${postId}`, {
+        params: { access_token: token }
+      });
+      console.log(`✅ [Meta ${platform} Delete] Post ${postId} removido da rede social!`);
+      return { success: true, platform, postId };
+    } catch (err) {
+      const errMsg = err.response?.data?.error?.message || err.message;
+      console.warn(`[Meta ${platform} Delete Warning] Falha ao deletar post ${postId}:`, errMsg);
+      return { success: false, platform, error: errMsg };
+    }
+  }
+
+  async deletePostFromNetworks(post) {
+    const results = {};
+    let destinations = [];
+    try {
+      destinations = await db.getPostDestinations(post.id);
+    } catch (_) {}
+
+    // 1. YouTube
+    const ytDest = destinations.find(d => d.platform === 'youtube' && d.platform_post_id);
+    const ytVideoId = ytDest?.platform_post_id || (post.platforms?.includes('youtube') && post.platform_post_id);
+    if (ytVideoId) {
+      results.youtube = await this.deleteFromYouTube(ytVideoId);
+    }
+
+    // 2. Facebook
+    const fbDest = destinations.find(d => d.platform === 'facebook' && d.platform_post_id);
+    const fbPostId = fbDest?.platform_post_id;
+    if (fbPostId) {
+      results.facebook = await this.deleteFromMeta(fbPostId, 'facebook');
+    }
+
+    // 3. Instagram
+    const igDest = destinations.find(d => d.platform === 'instagram' && d.platform_post_id);
+    const igPostId = igDest?.platform_post_id;
+    if (igPostId) {
+      results.instagram = await this.deleteFromMeta(igPostId, 'instagram');
+    }
+
+    return results;
   }
 }
 

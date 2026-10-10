@@ -1,0 +1,26 @@
+============================================================
+           SOCIALPUBLISHER - GUIA RÁPIDO DE USO
+============================================================
+
+1. COMO INICIAR NO COMPUTADOR:
+   - Dê 2 cliques no arquivo: "iniciar.bat"
+   - Ele vai abrir o programa automaticamente no seu navegador:
+     http://localhost:3000
+
+2. COMO USAR NO CELULAR / ONLINE (CLOUDFLARE):
+   - Dê 2 cliques no arquivo: "iniciar_online.bat"
+   - Na janela preta que abrir, copie o link que termina com:
+     https://xxxxxx.trycloudflare.com
+   - Abra esse link no seu celular! Ele funciona de qualquer lugar.
+
+3. COMO ATUALIZAR PELO GITHUB:
+   - Dê 2 cliques no arquivo: "ATUALIZAR_DO_GITHUB.bat"
+   - Ele baixa todas as novidades e atualiza o sistema sozinho.
+
+4. RECURSOS PRINCIPAIS:
+   - Publicar em YouTube, Instagram e Facebook ao mesmo tempo.
+   - Fila de até 3 vídeos sem ocupar espaço na tela.
+   - Agenda com os 3 melhores horários de pico (12:00, 18:30, 21:15).
+   - Conectar mais canais e perfis extras na aba de Contas.
+   - 100% adaptado para celular (sem zoom ou cortes).
+============================================================

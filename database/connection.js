@@ -434,29 +434,26 @@ const db = {
     const platforms = ['instagram', 'facebook', 'youtube'];
     if (isConnected) {
       const [rows] = await pool.query(`SELECT * FROM social_accounts`);
-      const map = {};
-      rows.forEach(r => { map[r.platform] = r; });
-      return platforms.map(p => map[p] || {
-        platform: p,
-        account_name: null,
-        account_id: null,
-        is_connected: false,
-        avatar_url: null,
-        updated_at: null
-      });
+      return rows;
     } else {
       const data = readFallback();
       if (!data.accounts) data.accounts = [];
-      const map = {};
-      data.accounts.forEach(r => { map[r.platform] = r; });
-      return platforms.map(p => map[p] || {
-        platform: p,
-        account_name: null,
-        account_id: null,
-        is_connected: false,
-        avatar_url: null,
-        updated_at: null
+      const list = [...data.accounts];
+      // Garante que as 3 plataformas principais existam no retorno
+      platforms.forEach(p => {
+        if (!list.some(a => a.platform === p)) {
+          list.push({
+            id: p,
+            platform: p,
+            account_name: null,
+            account_id: null,
+            is_connected: false,
+            avatar_url: null,
+            updated_at: null
+          });
+        }
       });
+      return list;
     }
   },
 
@@ -537,6 +534,58 @@ const db = {
         writeFallback(data);
       }
     }
+    return true;
+  },
+
+  async addAccount(accountData) {
+    const id = accountData.id || `acc_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+    const newAcc = {
+      id,
+      platform: accountData.platform,
+      account_name: accountData.account_name || accountData.accountName || 'Novo Perfil',
+      account_id: accountData.account_id || accountData.accountId || '',
+      access_token: accountData.access_token || accountData.accessToken || '',
+      api_key: accountData.api_key || accountData.apiKey || '',
+      avatar_url: accountData.avatar_url || accountData.avatarUrl || '',
+      is_connected: true,
+      profile_url: accountData.profile_url || accountData.profileUrl || '',
+      extra_info: typeof accountData.extra_info === 'string' ? accountData.extra_info : JSON.stringify(accountData.extra_info || { custom: true }),
+      updated_at: new Date().toISOString()
+    };
+
+    if (isConnected) {
+      try {
+        await pool.query(
+          `INSERT INTO social_accounts (id, platform, account_name, account_id, access_token, api_key, avatar_url, is_connected, extra_info)
+           VALUES (?, ?, ?, ?, ?, ?, ?, TRUE, ?)
+           ON DUPLICATE KEY UPDATE account_name = VALUES(account_name), access_token = VALUES(access_token)`,
+          [newAcc.id, newAcc.platform, newAcc.account_name, newAcc.account_id, newAcc.access_token, newAcc.api_key, newAcc.avatar_url, newAcc.extra_info]
+        );
+      } catch (_) {}
+    }
+
+    const data = readFallback();
+    if (!data.accounts) data.accounts = [];
+    const idx = data.accounts.findIndex(a => a.id === id);
+    if (idx >= 0) {
+      data.accounts[idx] = { ...data.accounts[idx], ...newAcc };
+    } else {
+      data.accounts.push(newAcc);
+    }
+    writeFallback(data);
+    return newAcc;
+  },
+
+  async deleteAccount(id) {
+    if (isConnected) {
+      try {
+        await pool.query(`DELETE FROM social_accounts WHERE id = ?`, [id]);
+      } catch (_) {}
+    }
+    const data = readFallback();
+    if (!data.accounts) data.accounts = [];
+    data.accounts = data.accounts.filter(a => a.id !== id && a.platform !== id);
+    writeFallback(data);
     return true;
   },
 
